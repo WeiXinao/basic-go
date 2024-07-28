@@ -31,6 +31,14 @@ func functional6() {
 	fn()
 }
 
+func functional6_1() {
+	// 新定义了一个方法，赋值给了 fn
+	fn := func() string {
+		return "hello"
+	}
+	fn()
+}
+
 // 它的意思是我返回一个，返回 string 的无参数方法
 func functional7() func() string {
 	return func() string {
