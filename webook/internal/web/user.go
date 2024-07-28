@@ -1,11 +1,13 @@
 package web
 
 import (
+	"fmt"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	jwt "github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"time"
 )
@@ -36,7 +38,8 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug := server.Group("/users")
 	{
 		ug.POST("/signup", u.SignUp)
-		ug.POST("/login", u.Login)
+		//ug.POST("/login", u.Login)
+		ug.POST("/login", u.LoginJWT)
 		ug.POST("/edit", u.Edit)
 		ug.GET("/profile", u.Profile)
 	}
@@ -99,6 +102,47 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 	}
 
 	ctx.String(http.StatusOK, "注册成功")
+}
+
+func (u *UserHandler) LoginJWT(ctx *gin.Context) {
+	type LoginReq struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	var req LoginReq
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	user, err := u.svc.Login(ctx, domain.User{
+		Email:    req.Email,
+		Password: req.Password,
+	})
+	if err == service.ErrInvalidUserOrPassword {
+		ctx.String(http.StatusOK, "用户名或密码错误")
+		return
+	}
+	if err != nil {
+		ctx.String(http.StatusOK, "系统错误")
+		return
+	}
+
+	// 步骤2
+	// 在这里用 JWT 设置登录态
+	// 生成一个 JWT token
+	// 下一节课，如果我们要在 JWT token 里面带我个人的数据，该怎么带？
+	// 比如，我要带 userId
+	token := jwt.New(jwt.SigningMethodHS512)
+	tokenStr, err := token.SignedString([]byte("jDDkHf8BqSaREsYqM5ntKTCXQYUGgCpW"))
+	if err != nil {
+		ctx.String(http.StatusInternalServerError, "系统错误")
+		return
+	}
+	ctx.Header("x-jwt-token", tokenStr)
+	fmt.Println(user)
+	fmt.Println(tokenStr)
+	ctx.String(http.StatusOK, "登录成功")
+	return
 }
 
 func (u *UserHandler) Login(ctx *gin.Context) {
