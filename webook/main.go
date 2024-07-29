@@ -6,10 +6,12 @@ import (
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	"github.com/WeiXinao/basic-go/webook/internal/web"
 	"github.com/WeiXinao/basic-go/webook/internal/web/middleware"
+	"github.com/WeiXinao/basic-go/webook/pkg/ginx/middlewares/ratelimit"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/redis"
+	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"strings"
@@ -37,6 +39,11 @@ func initWebServer() *gin.Engine {
 		println("这是第二个 middleware")
 	})
 
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: "192.168.5.33:6379",
+	})
+	server.Use(ratelimit.NewBuilder(redisClient, time.Second, 100).Build())
+
 	server.Use(cors.New(cors.Config{
 		//AllowOrigins: []string{"*"},
 		//AllowMethods: []string{"POST", "GET"},
@@ -60,12 +67,17 @@ func initWebServer() *gin.Engine {
 	//	[]byte("xTEsVjQ6LCdeUkWESjxhWIV2VnsDj5Pq"),
 	//	[]byte("hJLz5UFLxBXfoQ0C0ovf9FqypjpDjnDK"),
 	//)
-	store, err := redis.NewStore(16, "tcp", "192.168.5.33:6379", "",
+	//store, err := redis.NewStore(16, "tcp", "192.168.5.33:6379", "",
+	//	[]byte("xTEsVjQ6LCdeUkWESjxhWIV2VnsDj5Pq"),
+	//	[]byte("hJLz5UFLxBXfoQ0C0ovf9FqypjpDjnDK"))
+	//if err != nil {
+	//	panic(err)
+	//}
+
+	store := memstore.NewStore(
 		[]byte("xTEsVjQ6LCdeUkWESjxhWIV2VnsDj5Pq"),
-		[]byte("hJLz5UFLxBXfoQ0C0ovf9FqypjpDjnDK"))
-	if err != nil {
-		panic(err)
-	}
+		[]byte("hJLz5UFLxBXfoQ0C0ovf9FqypjpDjnDK"),
+	)
 
 	//myStore := &sqlx_store.Store{}
 	server.Use(sessions.Sessions("mysession", store))

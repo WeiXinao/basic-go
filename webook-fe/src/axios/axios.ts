@@ -17,6 +17,7 @@ instance.interceptors.response.use(function (resp) {
     const newToken = resp.headers["x-jwt-token"]
     const newRefreshToken = resp.headers["x-refresh-token"]
     if (newToken) {
+        console.log(newToken)
         localStorage.setItem("token", newToken)
     }
     if (newRefreshToken) {
