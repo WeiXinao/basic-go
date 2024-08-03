@@ -17,11 +17,13 @@ func NewLoginMiddlewareBuilder() *LoginMiddlewareBuilder {
 	return &LoginMiddlewareBuilder{}
 }
 
+// IgnorePaths 中间方法，用于构建部分
 func (l *LoginMiddlewareBuilder) IgnorePaths(path string) *LoginMiddlewareBuilder {
 	l.paths = append(l.paths, path)
 	return l
 }
 
+// Build 终结方法，返回你最终希望的数据
 func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 	// 用 go 的方式编码解码
 	//gob.Register(time.Now())

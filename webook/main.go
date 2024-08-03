@@ -1,19 +1,17 @@
 package main
 
 import (
+	"github.com/WeiXinao/basic-go/webook/config"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	"github.com/WeiXinao/basic-go/webook/internal/web"
 	"github.com/WeiXinao/basic-go/webook/internal/web/middleware"
-	"github.com/WeiXinao/basic-go/webook/pkg/ginx/middlewares/ratelimit"
 	"github.com/gin-contrib/cors"
-	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/memstore"
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -25,6 +23,9 @@ func main() {
 	u := initUser(db)
 	u.RegisterRoutes(server)
 
+	server.GET("/hello", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "你好，你来了")
+	})
 	server.Run(":8080")
 }
 
@@ -39,10 +40,10 @@ func initWebServer() *gin.Engine {
 		println("这是第二个 middleware")
 	})
 
-	redisClient := redis.NewClient(&redis.Options{
-		Addr: "192.168.5.33:6379",
-	})
-	server.Use(ratelimit.NewBuilder(redisClient, time.Second, 100).Build())
+	//redisClient := redis.NewClient(&redis.Options{
+	//	Addr: config.Config.Redis.Addr,
+	//})
+	//server.Use(ratelimit.NewBuilder(redisClient, time.Second, 100).Build())
 
 	server.Use(cors.New(cors.Config{
 		//AllowOrigins: []string{"*"},
@@ -74,13 +75,13 @@ func initWebServer() *gin.Engine {
 	//	panic(err)
 	//}
 
-	store := memstore.NewStore(
-		[]byte("xTEsVjQ6LCdeUkWESjxhWIV2VnsDj5Pq"),
-		[]byte("hJLz5UFLxBXfoQ0C0ovf9FqypjpDjnDK"),
-	)
+	//store := memstore.NewStore(
+	//	[]byte("xTEsVjQ6LCdeUkWESjxhWIV2VnsDj5Pq"),
+	//	[]byte("hJLz5UFLxBXfoQ0C0ovf9FqypjpDjnDK"),
+	//)
 
 	//myStore := &sqlx_store.Store{}
-	server.Use(sessions.Sessions("mysession", store))
+	//server.Use(sessions.Sessions("mysession", store))
 
 	// 步骤3
 	//server.Use(middleware.NewLoginMiddlewareBuilder().
@@ -101,7 +102,7 @@ func initUser(db *gorm.DB) *web.UserHandler {
 }
 
 func initDB() *gorm.DB {
-	db, err := gorm.Open(mysql.Open("root:123456@tcp(192.168.5.33:3306)/webook"))
+	db, err := gorm.Open(mysql.Open(config.Config.DB.DSN))
 	if err != nil {
 		// 我只会在初始化过程中 panic
 		// panic 相当于整个 goroutine 结束
