@@ -1,8 +1,11 @@
 module github.com/WeiXinao/basic-go
 
-go 1.20.6
+go 1.22
+
+toolchain go1.22.3
 
 require (
+	github.com/WeiXinao/xkit v0.0.0-20240806042248-1eb5169ebae5
 	github.com/dlclark/regexp2 v1.11.2
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-contrib/sessions v1.0.1
@@ -12,6 +15,7 @@ require (
 	github.com/gorilla/sessions v1.2.2
 	github.com/redis/go-redis/v9 v9.6.1
 	github.com/stretchr/testify v1.9.0
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/sms v1.0.977
 	golang.org/x/crypto v0.23.0
 	gorm.io/driver/mysql v1.5.7
 	gorm.io/driver/sqlite v1.5.6
@@ -46,7 +50,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/quasoft/memstore v0.0.0-20191010062613-2bce066d2b0b // indirect
+	github.com/tencentcloud/tencentcloud-sdk-go/tencentcloud/common v1.0.977 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
 	github.com/ugorji/go/codec v1.2.12 // indirect
 	golang.org/x/arch v0.8.0 // indirect
