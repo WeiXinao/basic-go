@@ -22,6 +22,8 @@ func NewService(client *sms.Client, appId string, signName string) *Service {
 	}
 }
 
+// 一个是 []*string
+// 一个是 string, json 串
 func (s *Service) Send(ctx context.Context, tplId string, args []string, numbers ...string) error {
 	req := sms.NewSendSmsRequest()
 	req.SmsSdkAppId = s.appId
