@@ -11,6 +11,11 @@ import (
 
 const CodeTplId = "1877556"
 
+var (
+	ErrCodeSendTooMany        = repository.ErrCodeSendTooMany
+	ErrCodeVerifyTooManyTimes = repository.ErrCodeVerifyTooManyTimes
+)
+
 func init() {
 	rand.Seed(time.Now().UnixMilli())
 }
@@ -18,6 +23,13 @@ func init() {
 type CodeService struct {
 	repo   *repository.CodeRepository
 	smsSvc sms.Service
+}
+
+func NewCodeService(repo *repository.CodeRepository, smsSvc sms.Service) *CodeService {
+	return &CodeService{
+		repo:   repo,
+		smsSvc: smsSvc,
+	}
 }
 
 func (svc *CodeService) Send(ctx context.Context,

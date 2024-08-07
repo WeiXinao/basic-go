@@ -3,12 +3,15 @@ package main
 import (
 	"github.com/WeiXinao/basic-go/webook/config"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
+	"github.com/WeiXinao/basic-go/webook/internal/repository/cache"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
+	"github.com/WeiXinao/basic-go/webook/internal/service/sms/memory"
 	"github.com/WeiXinao/basic-go/webook/internal/web"
 	"github.com/WeiXinao/basic-go/webook/internal/web/middleware"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"net/http"
@@ -18,9 +21,10 @@ import (
 
 func main() {
 	db := initDB()
+	redisClient := initRedis()
 	server := initWebServer()
 
-	u := initUser(db)
+	u := initUser(db, redisClient)
 	u.RegisterRoutes(server)
 
 	server.GET("/hello", func(ctx *gin.Context) {
@@ -89,15 +93,22 @@ func initWebServer() *gin.Engine {
 	//	IgnorePaths("/users/login").Build())
 	server.Use(middleware.NewLoginJWTMiddlewareBuilder().
 		IgnorePaths("/users/signup").
-		IgnorePaths("/users/login").Build())
+		IgnorePaths("/users/login").
+		IgnorePaths("/users/login_sms/code/send").
+		IgnorePaths("/users/login_sms").Build())
 	return server
 }
 
-func initUser(db *gorm.DB) *web.UserHandler {
+func initUser(db *gorm.DB, rdb redis.Cmdable) *web.UserHandler {
 	ud := dao.NewUserDAO(db)
-	repo := repository.NewUserRepository(ud)
+	uc := cache.NewUserCache(rdb)
+	repo := repository.NewUserRepository(ud, uc)
 	svc := service.NewUserService(repo)
-	u := web.NewUserHandler(svc)
+	codeCache := cache.NewCode(rdb)
+	codeRepo := repository.NewCodeRepository(codeCache)
+	smsSvc := memory.NewService()
+	codeSvc := service.NewCodeService(codeRepo, smsSvc)
+	u := web.NewUserHandler(svc, codeSvc)
 	return u
 }
 
@@ -115,4 +126,11 @@ func initDB() *gorm.DB {
 		panic(err)
 	}
 	return db
+}
+
+func initRedis() redis.Cmdable {
+	redisClient := redis.NewClient(&redis.Options{
+		Addr: config.Config.Redis.Addr,
+	})
+	return redisClient
 }
