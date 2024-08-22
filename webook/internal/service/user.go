@@ -12,16 +12,24 @@ import (
 var ErrUserDuplicateEmail = repository.ErrUserDuplicate
 var ErrInvalidUserOrPassword = errors.New("账号/邮箱或密码不对")
 
-type UserService struct {
-	repo *repository.UserRepository
+type UserService interface {
+	Login(ctx context.Context, u domain.User) (domain.User, error)
+	SignUp(ctx context.Context, u domain.User) error
+	Edit(ctx context.Context, u domain.User) error
+	Profile(ctx context.Context, id int64) (domain.User, error)
+	FindOrCreate(ctx *gin.Context, phone string) (domain.User, error)
 }
 
-func NewUserService(repo *repository.UserRepository) *UserService {
-	return &UserService{
+type userService struct {
+	repo repository.UserRepository
+}
+
+func NewUserService(repo repository.UserRepository) UserService {
+	return &userService{
 		repo: repo,
 	}
 }
-func (svc *UserService) Login(ctx context.Context, u domain.User) (domain.User, error) {
+func (svc *userService) Login(ctx context.Context, u domain.User) (domain.User, error) {
 	// 先找用户
 	foundUser, err := svc.repo.FindByEmail(ctx, u)
 	if err == repository.ErrUserNotFound {
@@ -39,7 +47,7 @@ func (svc *UserService) Login(ctx context.Context, u domain.User) (domain.User, 
 	return foundUser, nil
 }
 
-func (svc *UserService) SignUp(ctx context.Context, u domain.User) error {
+func (svc *userService) SignUp(ctx context.Context, u domain.User) error {
 	// 你要考虑加密放在哪里的问题了
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.Password), bcrypt.DefaultCost)
 	if err != nil {
@@ -50,15 +58,18 @@ func (svc *UserService) SignUp(ctx context.Context, u domain.User) error {
 	return svc.repo.Create(ctx, u)
 }
 
-func (svc *UserService) Edit(ctx context.Context, u domain.User) error {
+func (svc *userService) Edit(ctx context.Context, u domain.User) error {
 	return svc.repo.UpdateProfile(ctx, u)
 }
 
-func (svc *UserService) Profile(ctx context.Context, id int64) (domain.User, error) {
+func (svc *userService) Profile(ctx context.Context, id int64) (domain.User, error) {
+	// 在系统内部，基本上都是用 ID 的。
+	// 有些人的系统比较复杂，有一个 GUID（global unique ID）
+
 	return svc.repo.FindById(ctx, id)
 }
 
-func (svc *UserService) FindOrCreate(ctx *gin.Context, phone string) (domain.User, error) {
+func (svc *userService) FindOrCreate(ctx *gin.Context, phone string) (domain.User, error) {
 	// 这时候，这个地方要怎么办？
 	// 这个叫做快路径
 	u, err := svc.repo.FindByPhone(ctx, phone)

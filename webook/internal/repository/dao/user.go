@@ -14,41 +14,49 @@ var (
 	ErrUserNotFound  = gorm.ErrRecordNotFound
 )
 
-type UserDAO struct {
+type UserDao interface {
+	UpdateProfile(ctx context.Context, u User) error
+	FindById(ctx context.Context, id int64) (User, error)
+	FindByEmail(ctx context.Context, u User) (User, error)
+	FindByPhone(ctx context.Context, phone string) (User, error)
+	Insert(ctx context.Context, u User) error
+}
+
+type GORMUserDao struct {
 	db *gorm.DB
 }
 
-func NewUserDAO(db *gorm.DB) *UserDAO {
-	return &UserDAO{
+func NewUserDAO(db *gorm.DB) UserDao {
+	return &GORMUserDao{
 		db: db,
 	}
 }
 
-func (dao *UserDAO) UpdateProfile(ctx context.Context, u User) error {
+func (dao *GORMUserDao) UpdateProfile(ctx context.Context, u User) error {
 	return dao.db.WithContext(ctx).Model(&u).Select("nickname", "birthday", "about_me").Updates(u).Error
 }
 
-func (dao *UserDAO) FindById(ctx context.Context, id int64) (User, error) {
+func (dao *GORMUserDao) FindById(ctx context.Context, id int64) (User, error) {
 	var u User
 	err := dao.db.WithContext(ctx).First(&u, "id = ?", id).Error
 	return u, err
 }
 
-func (dao *UserDAO) FindByEmail(ctx context.Context, u User) (User, error) {
+func (dao *GORMUserDao) FindByEmail(ctx context.Context, u User) (User, error) {
 	var foundUser User
 	err := dao.db.WithContext(ctx).Where("email = ?", u.Email).First(&foundUser).Error
 	//err := dao.db.WithContext(ctx).First(&foundUser, "email = ?", u.Email).Error
 	return foundUser, err
 }
 
-func (dao *UserDAO) FindByPhone(ctx context.Context, phone string) (User, error) {
+func (dao *GORMUserDao) FindByPhone(ctx context.Context, phone string) (User, error) {
 	var foundUser User
 	err := dao.db.WithContext(ctx).Where("phone = ?", phone).First(&foundUser).Error
 	//err := dao.db.WithContext(ctx).First(&foundUser, "email = ?", u.Email).Error
 	return foundUser, err
 }
 
-func (dao *UserDAO) Insert(ctx context.Context, u User) error {
+func (dao *GORMUserDao) Insert(ctx context.Context, u User) error {
 	// 存毫秒数
 	now := time.Now().UnixMilli()
 	u.Utime = now

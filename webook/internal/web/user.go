@@ -21,13 +21,13 @@ var _ handler = (*UserHandler)(nil)
 
 // UserHandler 我准备在它上面定义跟用户有关的路由
 type UserHandler struct {
-	svc         *service.UserService
-	codeSvc     *service.CodeService
+	svc         service.UserService
+	codeSvc     service.CodeService
 	emailExp    *regexp.Regexp
 	passwordExp *regexp.Regexp
 }
 
-func NewUserHandler(svc *service.UserService, codeSvc *service.CodeService) *UserHandler {
+func NewUserHandler(svc service.UserService, codeSvc service.CodeService) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
@@ -353,15 +353,12 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 		return
 	}
 
-	sess := sessions.Default(ctx)
-	id := sess.Get("userId")
-	if id == nil {
-		ctx.String(http.StatusUnauthorized, "请先登录")
-		return
-	}
+	//sess := sessions.Default(ctx)
+	//id := sess.Get("userId")
+	uc := ctx.MustGet("claims").(*UserClaims)
 
 	err = u.svc.Edit(ctx, domain.User{
-		Id:       id.(int64),
+		Id:       uc.Uid,
 		Nickname: editReq.Nickname,
 		Birthday: brith,
 		AboutMe:  editReq.AboutMe,
@@ -372,11 +369,21 @@ func (u *UserHandler) Edit(ctx *gin.Context) {
 		return
 	}
 
-	ctx.String(http.StatusOK, "编辑成功")
+	ctx.JSON(http.StatusOK, Result{
+		Code: 0,
+		Msg:  "编辑成功",
+	})
 	return
 }
 
 func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
+	type Profile struct {
+		Email    string
+		Phone    string
+		Nickname string
+		Birthday string
+		AboutMe  string
+	}
 	c, ok := ctx.Get("claims")
 	// 你可以断定，必然有 claims
 	//if !ok {
@@ -391,9 +398,20 @@ func (u *UserHandler) ProfileJWT(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "系统错误")
 		return
 	}
-	println(claims.Uid)
-	ctx.String(http.StatusOK, "你的 profile")
+	userDomain, err := u.svc.Profile(ctx, claims.Uid)
+	if err != nil {
+		// 按照道理来说，这边 id 对应的数据肯定存在，所以要是没找到，
+		//那就说明是系统出了问题
+		ctx.String(http.StatusOK, "系统错误")
+	}
 	// 这边就是你补充 profile 的其他代码
+	ctx.JSON(http.StatusOK, Profile{
+		Email:    userDomain.Email,
+		Phone:    userDomain.Phone,
+		Nickname: userDomain.Nickname,
+		Birthday: userDomain.Birthday.Format(time.DateOnly),
+		AboutMe:  userDomain.AboutMe,
+	})
 }
 
 func (u *UserHandler) Profile(ctx *gin.Context) {
