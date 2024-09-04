@@ -26,7 +26,7 @@ func InitWebServer() *gin.Engine {
 		thirdProvider,
 		userSvcProvider,
 		//articlSvcProvider,
-		cache.NewCode,
+		cache.NewCodeCache,
 		repository.NewCodeRepository,
 		// service 部分
 		// 集成测试我们显式指定使用内存实现
@@ -37,16 +37,15 @@ func InitWebServer() *gin.Engine {
 		service.NewCodeService,
 		// handler 部分
 		web.NewUserHandler,
-		web.NewOAuth2FeishuHandler,
-		ioc.NewFeishuHandlerConfig,
+		web.NewOAuth2WechatHandler,
+		InitWechatHandlerConfig,
 		ijwt.NewRedisJWTHandler,
 
-		ioc.NewRateLimiter,
 		// gin 的中间件
 		ioc.InitMiddlewares,
 
 		// Web 服务器
-		ioc.InitGin,
+		ioc.InitWebServer,
 	)
 	// 随便返回一个
 	return gin.Default()
