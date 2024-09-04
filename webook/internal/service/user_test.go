@@ -2,42 +2,123 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
-	"reflect"
+	repomocks "github.com/WeiXinao/basic-go/webook/internal/repository/mocks"
+	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
+	"golang.org/x/crypto/bcrypt"
 	"testing"
+	"time"
 )
 
 func Test_userService_Login(t *testing.T) {
-	type fields struct {
-		repo repository.UserRepository
-	}
-	type args struct {
-		ctx context.Context
-		u   domain.User
-	}
-	tests := []struct {
-		name    string
-		fields  fields
-		args    args
-		want    domain.User
-		wantErr bool
+	// 做成一个测试用例都用到的时间
+	now := time.Now()
+
+	testCases := []struct {
+		name string
+		mock func(ctrl *gomock.Controller) repository.UserRepository
+
+		// 输入
+		//ctx      context.Context
+		email    string
+		password string
+
+		// 输出
+		wantUser domain.User
+		wantErr  error
 	}{
-		// TODO: Add test cases.
+		{
+			name: "登录成功", // 用户名和密码是对的
+			mock: func(ctrl *gomock.Controller) repository.UserRepository {
+				repo := repomocks.NewMockUserRepository(ctrl)
+				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").
+					Return(domain.User{
+						Email:    "123@qq.com",
+						Password: "$2a$10$MN9ZKKIbjLZDyEpCYW19auY7mvOG9pcpiIcUUoZZI6pA6OmKZKOVi",
+						Phone:    "15212345678",
+						Ctime:    now,
+					}, nil)
+				return repo
+			},
+			email:    "123@qq.com",
+			password: "hello#world123",
+
+			wantUser: domain.User{
+				Email:    "123@qq.com",
+				Password: "$2a$10$MN9ZKKIbjLZDyEpCYW19auY7mvOG9pcpiIcUUoZZI6pA6OmKZKOVi",
+				Phone:    "15212345678",
+				Ctime:    now,
+			},
+			wantErr: nil,
+		},
+		{
+			name: "用户不存在",
+			mock: func(ctrl *gomock.Controller) repository.UserRepository {
+				repo := repomocks.NewMockUserRepository(ctrl)
+				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").
+					Return(domain.User{}, repository.ErrUserNotFound)
+				return repo
+			},
+			email:    "123@qq.com",
+			password: "hello#world123",
+
+			wantUser: domain.User{},
+			wantErr:  ErrInvalidUserOrPassword,
+		},
+		{
+			name: "DB错误",
+			mock: func(ctrl *gomock.Controller) repository.UserRepository {
+				repo := repomocks.NewMockUserRepository(ctrl)
+				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").
+					Return(domain.User{}, errors.New("mock db 错误"))
+				return repo
+			},
+			email:    "123@qq.com",
+			password: "hello#world123",
+
+			wantUser: domain.User{},
+			wantErr:  errors.New("mock db 错误"),
+		},
+		{
+			name: "密码不对",
+			mock: func(ctrl *gomock.Controller) repository.UserRepository {
+				repo := repomocks.NewMockUserRepository(ctrl)
+				repo.EXPECT().FindByEmail(gomock.Any(), "123@qq.com").
+					Return(domain.User{
+						Email:    "123@qq.com",
+						Password: "$2a$10$MN9ZKKIbjLZDyEpCYW19auY7mvOG9pcpiIcUUoZZI6pA6OmKZKOVi",
+						Phone:    "15212345678",
+						Ctime:    now,
+					}, nil)
+				return repo
+			},
+			email:    "123@qq.com",
+			password: "112443rsdffhello#world123",
+
+			wantUser: domain.User{},
+			wantErr:  ErrInvalidUserOrPassword,
+		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			svc := &userService{
-				repo: tt.fields.repo,
-			}
-			got, err := svc.Login(tt.args.ctx, tt.args.u)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("Login() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Login() got = %v, want %v", got, tt.want)
-			}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
+			// 具体的测试代码
+			svc := NewUserService(tc.mock(ctrl))
+			u, err := svc.Login(context.Background(), tc.email, tc.password)
+			assert.Equal(t, tc.wantErr, err)
+			assert.Equal(t, tc.wantUser, u)
 		})
+	}
+}
+
+func TestEncrypted(t *testing.T) {
+	res, err := bcrypt.GenerateFromPassword([]byte("hello#world123"), bcrypt.DefaultCost)
+	if err == nil {
+		t.Log(string(res))
 	}
 }

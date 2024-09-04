@@ -9,12 +9,12 @@ import (
 type Store struct {
 }
 
-func (st *Store) Get(r *http.Request, name string) (*sessions.Session, error) {
+func (s *Store) Get(r *http.Request, name string) (*sessions.Session, error) {
 	//TODO implement me
 	panic("implement me")
 }
 
-func (st *Store) New(r *http.Request, name string) (*sessions.Session, error) {
+func (s *Store) New(r *http.Request, name string) (*sessions.Session, error) {
 	//TODO implement me
 	panic("implement me")
 }
@@ -24,7 +24,7 @@ func (st *Store) Save(r *http.Request, w http.ResponseWriter, s *sessions.Sessio
 	panic("implement me")
 }
 
-func (st *Store) Options(options ginSession.Options) {
+func (s *Store) Options(options ginSession.Options) {
 	//TODO implement me
 	panic("implement me")
 }

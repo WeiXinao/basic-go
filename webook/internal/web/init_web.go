@@ -1,6 +1,8 @@
 package web
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 func RegisterRoutes() *gin.Engine {
 	server := gin.Default()
@@ -10,24 +12,23 @@ func RegisterRoutes() *gin.Engine {
 
 func registerUsersRoutes(server *gin.Engine) {
 	u := &UserHandler{}
-
+	server.POST("/users/signup", u.SignUp)
 	// 这是 REST 风格
-	//server.PUT("/user", func(ctx *gin.Context) {
+	//server.PUT("/user", func(context *gin.Context) {
 	//
 	//})
-	server.POST("/users/signup", u.SignUp)
 
 	server.POST("/users/login", u.Login)
 
-	// REST 风格
-	//server.POST("/users/:id", func(ctx *gin.Context) {
-	//
-	//})
 	server.POST("/users/edit", u.Edit)
-
 	// REST 风格
-	//server.GET("/users/:id", func(ctx *gin.Context) {
+	//server.POST("/users/:id", func(context *gin.Context) {
 	//
 	//})
+
 	server.GET("/users/profile", u.Profile)
+	// REST 风格
+	//server.GET("/users/:id", func(context *gin.Context) {
+	//
+	//})
 }

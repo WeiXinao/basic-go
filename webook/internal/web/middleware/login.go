@@ -1,10 +1,10 @@
 package middleware
 
 import (
+	"encoding/gob"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"slices"
 	"time"
 )
 
@@ -16,23 +16,22 @@ type LoginMiddlewareBuilder struct {
 func NewLoginMiddlewareBuilder() *LoginMiddlewareBuilder {
 	return &LoginMiddlewareBuilder{}
 }
-
-// IgnorePaths 中间方法，用于构建部分
 func (l *LoginMiddlewareBuilder) IgnorePaths(path string) *LoginMiddlewareBuilder {
 	l.paths = append(l.paths, path)
 	return l
 }
 
-// Build 终结方法，返回你最终希望的数据
 func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
-	// 用 go 的方式编码解码
-	//gob.Register(time.Now())
+	// 用 Go 的方式编码解码
+	gob.Register(time.Now())
 	return func(ctx *gin.Context) {
-		//不需要登录校验的
-		if slices.Contains[[]string](l.paths, ctx.Request.URL.Path) {
-			return
+		// 不需要登录校验的
+		for _, path := range l.paths {
+			if ctx.Request.URL.Path == path {
+				return
+			}
 		}
-		//不需要登录校验的
+		// 不需要登录校验的
 		//if ctx.Request.URL.Path == "/users/login" ||
 		//	ctx.Request.URL.Path == "/users/signup" {
 		//	return
@@ -40,37 +39,87 @@ func (l *LoginMiddlewareBuilder) Build() gin.HandlerFunc {
 		sess := sessions.Default(ctx)
 		id := sess.Get("userId")
 		if id == nil {
+			// 没有登录
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
 
 		updateTime := sess.Get("update_time")
-		now := time.Now().UnixMilli()
-		// 说明还没有刷新过，刚登陆，还没有刷新
+		sess.Set("userId", id)
+		sess.Options(sessions.Options{
+			MaxAge: 60,
+		})
+		now := time.Now()
+		// 说明还没有刷新过，刚登陆，还没刷新过
 		if updateTime == nil {
-			sess.Set("userId", id)
 			sess.Set("update_time", now)
-			sess.Options(sessions.Options{
-				MaxAge: 60,
-			})
-			sess.Save()
-			return
+			if err := sess.Save(); err != nil {
+				panic(err)
+			}
+		}
+		// updateTime 是有的
+		updateTimeVal, _ := updateTime.(time.Time)
+		if now.Sub(updateTimeVal) > time.Second*10 {
+			sess.Set("update_time", now)
+			if err := sess.Save(); err != nil {
+				panic(err)
+			}
+		}
+	}
+}
+
+var IgnorePaths []string
+
+func CheckLogin() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		// 不需要登录校验的
+		for _, path := range IgnorePaths {
+			if ctx.Request.URL.Path == path {
+				return
+			}
 		}
 
-		// update_time 是有的
-		updateTimeVal, ok := updateTime.(int64)
-		if !ok {
-			ctx.AbortWithStatus(http.StatusInternalServerError)
+		// 不需要登录校验的
+		//if ctx.Request.URL.Path == "/users/login" ||
+		//	ctx.Request.URL.Path == "/users/signup" {
+		//	return
+		//}
+		sess := sessions.Default(ctx)
+		id := sess.Get("userId")
+		if id == nil {
+			// 没有登录
+			ctx.AbortWithStatus(http.StatusUnauthorized)
 			return
 		}
+	}
+}
 
-		if now-updateTimeVal > 10*1000 {
-			sess.Set("userId", id)
-			sess.Set("update_time", now)
-			sess.Options(sessions.Options{
-				MaxAge: 60,
-			})
-			sess.Save()
+func CheckLoginV1(paths []string,
+	abc int,
+	bac int64,
+	asdsd string) gin.HandlerFunc {
+	if len(paths) == 0 {
+		paths = []string{}
+	}
+	return func(ctx *gin.Context) {
+		// 不需要登录校验的
+		for _, path := range paths {
+			if ctx.Request.URL.Path == path {
+				return
+			}
+		}
+
+		// 不需要登录校验的
+		//if ctx.Request.URL.Path == "/users/login" ||
+		//	ctx.Request.URL.Path == "/users/signup" {
+		//	return
+		//}
+		sess := sessions.Default(ctx)
+		id := sess.Get("userId")
+		if id == nil {
+			// 没有登录
+			ctx.AbortWithStatus(http.StatusUnauthorized)
+			return
 		}
 	}
 }

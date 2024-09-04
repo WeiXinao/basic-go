@@ -1,2 +1,2 @@
-// Package ioc 控制反转
+// Package ioc 依赖反转
 package ioc

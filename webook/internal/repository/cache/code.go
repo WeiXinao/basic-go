@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
 )
 
 var (
 	ErrCodeSendTooMany        = errors.New("发送验证码太频繁")
-	ErrCodeVerifyTooManyTimes = errors.New("验证此数太多")
-	ErrUnknownForCode         = errors.New("我也不知道发生什么，反正是跟 code 有关")
+	ErrCodeVerifyTooManyTimes = errors.New("验证次数太多")
+	ErrUnknownForCode         = errors.New("我也不知发生什么了，反正是跟 code 有关")
 )
 
-// 编译器会在编译的时候，把 set_code 这个代码放进来这个 luaSetCode 变量里
+// 编译器会在编译的时候，把 set_code 的代码放进来这个 luaSetCode 变量里
 //
 //go:embed lua/set_code.lua
 var luaSetCode string
@@ -31,14 +32,14 @@ type RedisCodeCache struct {
 	client redis.Cmdable
 }
 
-// NewCodeCacheGoBestPractice Go 最佳实践是返回具体类型
+// NewCodeCacheGoBestPractice Go 的最佳实践是返回具体类型
 func NewCodeCacheGoBestPractice(client redis.Cmdable) *RedisCodeCache {
 	return &RedisCodeCache{
 		client: client,
 	}
 }
 
-func NewCode(client redis.Cmdable) CodeCache {
+func NewCodeCache(client redis.Cmdable) CodeCache {
 	return &RedisCodeCache{
 		client: client,
 	}
@@ -55,7 +56,15 @@ func (c *RedisCodeCache) Set(ctx context.Context, biz, phone, code string) error
 		return nil
 	case -1:
 		// 发送太频繁
+		zap.L().Warn("短信发送太频繁",
+			zap.String("biz", biz),
+			// phone 是不能直接记
+			zap.String("phone", phone))
+		// 你要在对应的告警系统里面配置，
+		// 比如说规则，一分钟内出现超过100次 WARN，你就告警
 		return ErrCodeSendTooMany
+	//case -2:
+	//	return
 	default:
 		// 系统错误
 		return errors.New("系统错误")
@@ -75,16 +84,21 @@ func (c *RedisCodeCache) Verify(ctx context.Context, biz, phone, inputCode strin
 		return false, ErrCodeVerifyTooManyTimes
 	case -2:
 		return false, nil
-	default:
-		return false, ErrCodeVerifyTooManyTimes
+		//default:
+		//	return false, ErrUnknownForCode
 	}
+	return false, ErrUnknownForCode
 }
+
+//func (c *RedisCodeCache) Verify(ctx context.Context, biz, phone, code string) error {
+//
+//}
 
 func (c *RedisCodeCache) key(biz, phone string) string {
 	return fmt.Sprintf("phone_code:%s:%s", biz, phone)
 }
 
-// LocalCache 假如你要切换这个，你是不是要把 lua 脚本的逻辑，在这里再写一遍？
+// LocalCodeCache 假如说你要切换这个，你是不是得把 lua 脚本的逻辑，在这里再写一遍？
 type LocalCodeCache struct {
 	client redis.Cmdable
 }

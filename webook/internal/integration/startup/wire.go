@@ -27,7 +27,9 @@ func InitWebServer() *gin.Engine {
 		userSvcProvider,
 		//articlSvcProvider,
 		cache.NewCodeCache,
+		dao.NewGORMArticleDAO,
 		repository.NewCodeRepository,
+		repository.NewArticleRepository,
 		// service 部分
 		// 集成测试我们显式指定使用内存实现
 		ioc.InitSMSService,
@@ -35,9 +37,11 @@ func InitWebServer() *gin.Engine {
 		// 指定啥也不干的 wechat service
 		InitPhantomWechatService,
 		service.NewCodeService,
+		service.NewArticleService,
 		// handler 部分
 		web.NewUserHandler,
 		web.NewOAuth2WechatHandler,
+		web.NewArticleHandler,
 		InitWechatHandlerConfig,
 		ijwt.NewRedisJWTHandler,
 
@@ -49,6 +53,16 @@ func InitWebServer() *gin.Engine {
 	)
 	// 随便返回一个
 	return gin.Default()
+}
+
+func InitArticleHandler() *web.ArticleHandler {
+	wire.Build(thirdProvider,
+		service.NewArticleService,
+		web.NewArticleHandler,
+		repository.NewArticleRepository,
+		dao.NewGORMArticleDAO,
+	)
+	return &web.ArticleHandler{}
 }
 
 func InitUserSvc() service.UserService {
