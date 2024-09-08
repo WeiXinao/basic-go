@@ -3,8 +3,9 @@ package integration
 import (
 	"bytes"
 	"encoding/json"
+	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/integration/startup"
-	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
+	dao "github.com/WeiXinao/basic-go/webook/internal/repository/dao/article"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
@@ -41,6 +42,10 @@ func (s *ArticleTestSuite) SetupSuite() {
 func (s *ArticleTestSuite) TearDownTest() {
 	// 请空所有数据并且ziz
 	s.db.Exec("TRUNCATE TABLE articles")
+}
+
+func (s *ArticleTestSuite) TestPublish() {
+
 }
 
 func (s *ArticleTestSuite) TestEdit() {
@@ -80,6 +85,7 @@ func (s *ArticleTestSuite) TestEdit() {
 					Title:    "我的标题",
 					Content:  "我的内容",
 					AuthorId: 123,
+					Status:   domain.ArticleStatusUnpublished.ToUint8(),
 				}, art)
 			},
 			art: Article{
@@ -105,6 +111,8 @@ func (s *ArticleTestSuite) TestEdit() {
 					// 因为 time.Now() 每次运行都不同，你很难断言
 					Ctime: 123,
 					Utime: 234,
+					// 假设这个是一个已经发表的，然后你去修改，改成了没发表
+					Status: domain.ArticleStatusUnpublished.ToUint8(),
 				}).Error
 				assert.NoError(t, err)
 			},
@@ -122,6 +130,7 @@ func (s *ArticleTestSuite) TestEdit() {
 					Content:  "新的内容",
 					AuthorId: 123,
 					Ctime:    123,
+					Status:   domain.ArticleStatusUnpublished.ToUint8(),
 				}, art)
 			},
 			art: Article{
@@ -150,6 +159,8 @@ func (s *ArticleTestSuite) TestEdit() {
 					// 因为 time.Now() 每次运行都不同，你很难断言
 					Ctime: 123,
 					Utime: 234,
+					// 为了验证状态没有变
+					Status: domain.ArticleStatusPublished.ToUint8(),
 				}).Error
 				assert.NoError(t, err)
 			},
@@ -165,6 +176,7 @@ func (s *ArticleTestSuite) TestEdit() {
 					AuthorId: 789,
 					Ctime:    123,
 					Utime:    234,
+					Status:   domain.ArticleStatusPublished.ToUint8(),
 				}, art)
 			},
 			art: Article{

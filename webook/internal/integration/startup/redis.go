@@ -10,7 +10,7 @@ var redisClient redis.Cmdable
 func InitRedis() redis.Cmdable {
 	if redisClient == nil {
 		redisClient = redis.NewClient(&redis.Options{
-			Addr: "192.168.5.3:6379",
+			Addr: "192.168.5.4:6379",
 		})
 
 		for err := redisClient.Ping(context.Background()).Err(); err != nil; {

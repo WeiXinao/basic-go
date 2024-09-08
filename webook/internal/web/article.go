@@ -33,6 +33,47 @@ func (a *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 
 	g.POST("/edit", a.Edit)
 	g.POST("/publish", a.Publish)
+	g.POST("/withdraw", a.Withdraw)
+}
+
+func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
+	type Req struct {
+		Id int64
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+
+	c := ctx.MustGet("claims")
+	claims, ok := c.(*ijwt.UserClaims)
+	if !ok {
+		//ctx.AbortWithStatus(http.StatusUnauthorized)
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		a.l.Error("未发现用户的 session 信息")
+		return
+	}
+	err := a.svc.Withdraw(ctx, domain.Article{
+		Id: req.Id,
+		Author: domain.Author{
+			Id: claims.Uid,
+		},
+	})
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		// 打日志？
+		a.l.Error("保存失败", logger.Error(err))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
+	})
 }
 
 func (a *ArticleHandler) Publish(ctx *gin.Context) {
@@ -40,8 +81,8 @@ func (a *ArticleHandler) Publish(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	c := ctx.MustGet("claims")
 
+	c := ctx.MustGet("claims")
 	claims, ok := c.(*ijwt.UserClaims)
 	if !ok {
 		//ctx.AbortWithStatus(http.StatusUnauthorized)

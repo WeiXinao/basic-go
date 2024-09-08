@@ -4,8 +4,10 @@ package startup
 
 import (
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
+	"github.com/WeiXinao/basic-go/webook/internal/repository/article"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/cache"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
+	artdao "github.com/WeiXinao/basic-go/webook/internal/repository/dao/article"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	"github.com/WeiXinao/basic-go/webook/internal/web"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
@@ -27,9 +29,9 @@ func InitWebServer() *gin.Engine {
 		userSvcProvider,
 		//articlSvcProvider,
 		cache.NewCodeCache,
-		dao.NewGORMArticleDAO,
+		artdao.NewGORMArticleDAO,
 		repository.NewCodeRepository,
-		repository.NewArticleRepository,
+		article.NewArticleRepository,
 		// service 部分
 		// 集成测试我们显式指定使用内存实现
 		ioc.InitSMSService,
@@ -59,8 +61,8 @@ func InitArticleHandler() *web.ArticleHandler {
 	wire.Build(thirdProvider,
 		service.NewArticleService,
 		web.NewArticleHandler,
-		repository.NewArticleRepository,
-		dao.NewGORMArticleDAO,
+		article.NewArticleRepository,
+		artdao.NewGORMArticleDAO,
 	)
 	return &web.ArticleHandler{}
 }

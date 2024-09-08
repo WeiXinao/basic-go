@@ -10,6 +10,7 @@ import (
 
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
+	Withdraw(ctx context.Context, art domain.Article) error
 	Publish(ctx context.Context, art domain.Article) (int64, error)
 	PublishV1(ctx context.Context, art domain.Article) (int64, error)
 }
@@ -17,7 +18,7 @@ type ArticleService interface {
 type articleService struct {
 	repo article.ArticleRepository
 
-	// V1
+	// V1 依靠两个不同的 repository 来解决这种跨表，或者跨库的问题
 	author article.ArticleAuthorRepository
 	reader article.ArticleReaderRepository
 	l      logger.LoggerV1
@@ -27,6 +28,11 @@ func NewArticleService(repo article.ArticleRepository) ArticleService {
 	return &articleService{
 		repo: repo,
 	}
+}
+
+func (a *articleService) Withdraw(ctx context.Context, art domain.Article) error {
+	//art.Status = domain.ArticleStatusPrivate 然后把整个 art 往下传
+	return a.repo.SyncStatus(ctx, art.Id, art.Author.Id, domain.ArticleStatusPrivate)
 }
 
 func NewArticleServiceV1(author article.ArticleAuthorRepository,
@@ -39,11 +45,12 @@ func NewArticleServiceV1(author article.ArticleAuthorRepository,
 }
 
 func (a *articleService) Publish(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusPublished
 	//// 制作库？
 	//id, err := a.repo.Create(ctx, art)
 	//// 线上库呢？
 	//a.repo.SyncToLiveDB(ctx, art)
-	return 0, nil
+	return a.repo.Sync(ctx, art)
 }
 
 func (a *articleService) PublishV1(ctx context.Context, art domain.Article) (int64, error) {
@@ -93,6 +100,7 @@ func (a *articleService) PublishV1(ctx context.Context, art domain.Article) (int
 }
 
 func (a *articleService) Save(ctx context.Context, art domain.Article) (int64, error) {
+	art.Status = domain.ArticleStatusUnpublished
 	if art.Id > 0 {
 		err := a.repo.Update(ctx, art)
 		return art.Id, err

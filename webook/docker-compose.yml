@@ -1,0 +1,28 @@
+services:
+  redis:
+    image: redis:7.4.0
+    container_name: myredis7
+    privileged: true
+    ports:
+      - "6379:6379"
+    volumes:
+      - /root/redis/redis.conf:/usr/local/etc/redis/redis.conf
+      - /root/redis/data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
+  mysql:
+    image: mysql:8.0
+    container_name: mymysql8
+    privileged: true
+    ports:
+      - "3306:3306"
+    volumes:
+      - /root/mysql/log:/var/log/mysql
+      - /root/mysql/data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456"
+  etcd:
+    image: "bitnami/etcd:3.5.9"
+    environment:
+      - ALLOW_NONE_AUTHENTICATION=yes
+    ports:
+      - "12379:2379"
