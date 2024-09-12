@@ -106,3 +106,23 @@ func NewMongoDBArticleDAO(db *mongo.Database, node *snowflake.Node) ArticleDAO {
 		node:    node,
 	}
 }
+
+//func ToUpdate(vals map[string]any) bson.M {
+//	return vals
+//}
+//
+//func toFilter(vals map[string]any) bson.D {
+//	var res bson.D
+//	for k, v := range vals {
+//		res = append(res, bson.E{k, v})
+//	}
+//	return res
+//}
+//
+//func Set(vals map[string]any) bson.M {
+//	return bson.M{"$set": bson.M(vals)}
+//}
+//
+//func Upsert(vals map[string]any) bson.M {
+//	return bson.M{"$set": bson.M(vals), "$setOnInsert":}
+//}
