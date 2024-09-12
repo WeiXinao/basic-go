@@ -26,3 +26,13 @@ services:
       - ALLOW_NONE_AUTHENTICATION=yes
     ports:
       - "12379:2379"
+  mongodb:
+    image: mongo:6.0
+    container_name: mymongo
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: 123456
+    ports:
+      - "27017:27017"
+    volumes:
+      - /root/mongo/data:/data/db

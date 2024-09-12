@@ -77,7 +77,7 @@ func (dao *GORMArticleDAO) Sync(ctx context.Context, art Article) (int64, error)
 		}
 
 		// 要操作线上库了
-		return txDAO.Upsert(ctx, PublishArticle{Article: art})
+		return txDAO.Upsert(ctx, PublishArticle(art))
 	})
 	return id, err
 }
@@ -165,10 +165,10 @@ func (dao *GORMArticleDAO) Insert(ctx context.Context, art Article) (int64, erro
 // 执行 SELECT * FROM articles WHERE author_id = 123 ORDER BY ctime DESC
 // 比较两种索引的性能
 type Article struct {
-	Id int64 `gorm:"primaryKey,autoIncrement"`
+	Id int64 `gorm:"primaryKey,autoIncrement" bson:"id,omitempty"`
 	// 长度 1024
-	Title   string `gorm:"type=varchar(1024)"`
-	Content string `gorm:"type=BLOB"`
+	Title   string `gorm:"type=varchar(1024)" bson:"title,omitempty"`
+	Content string `gorm:"type=BLOB" bson:"content,omitempty"`
 	// 如何设计索引
 	// WHERE
 	// 在帖子这里，什么样的查询场景？
@@ -185,13 +185,13 @@ type Article struct {
 	// 学学 Explain 命令
 
 	// 在 author_id 上创建索引
-	AuthorId int64 `gorm:"index"`
+	AuthorId int64 `gorm:"index" bson:"author_id,omitempty"`
 
 	// 有些人考虑到，经常用状态来查询
 	// WHERE status = xxx AND
 	// 在 status 上和别的列混在一起，创建一个联合索引
 	// 要看别的列究竟是什么列。
-	Status uint8
-	Ctime  int64
-	Utime  int64
+	Status uint8 `bson:"status,omitempty"`
+	Ctime  int64 `bson:"ctime,omitempty"`
+	Utime  int64 `bson:"utime,omitempty"`
 }

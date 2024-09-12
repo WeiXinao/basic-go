@@ -73,7 +73,7 @@ func (c *CachedArticleRepository) SyncV2(ctx context.Context, art domain.Article
 	// 考虑到，此时线上库可能有，可能没有，你要有一个 UPSERT 的写法
 	// INSERT OR UPDATE
 	// 如果数据库有，那么就更新，不然就插入
-	err = reader.UpsertV2(ctx, dao.PublishArticle{Article: artn})
+	err = reader.UpsertV2(ctx, dao.PublishArticle(artn))
 	// 执行成功，直接提交
 	tx.Commit()
 	return id, err

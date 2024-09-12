@@ -11,9 +11,7 @@ type ReaderDAO interface {
 }
 
 // PublishArticle 这个代表的是线上表
-type PublishArticle struct {
-	Article
-}
+type PublishArticle Article
 
 func NewReaderDAO(db *gorm.DB) ReaderDAO {
 	panic("implement me")
