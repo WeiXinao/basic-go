@@ -16,6 +16,8 @@ var ErrInvalidUserOrPassword = errors.New("账号/邮箱或密码不对")
 type UserService interface {
 	Login(ctx context.Context, email, password string) (domain.User, error)
 	SignUp(ctx context.Context, u domain.User) error
+	UpdateNonSensitiveInfo(ctx context.Context,
+		user domain.User) error
 	FindOrCreate(ctx context.Context, phone string) (domain.User, error)
 	FindOrCreateByWechat(ctx context.Context, wechatInfo domain.WechatInfo) (domain.User, error)
 	Profile(ctx context.Context, id int64) (domain.User, error)
@@ -48,6 +50,12 @@ func NewUserServiceV1(repo repository.UserRepository, l *zap.Logger) UserService
 //		repo: f.NewRepo(),
 //	}
 //}
+
+func (svc *userService) UpdateNonSensitiveInfo(ctx context.Context,
+	user domain.User) error {
+	// UpdateNicknameAndXXAnd
+	return svc.repo.UpdateNonZeroFields(ctx, user)
+}
 
 func (svc *userService) Login(ctx context.Context, email, password string) (domain.User, error) {
 	// 先找用户

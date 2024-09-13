@@ -1,9 +1,12 @@
 package web
 
 import (
+	"fmt"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
+	"github.com/WeiXinao/basic-go/webook/pkg/ginx"
+	"github.com/WeiXinao/basic-go/webook/pkg/logger"
 	regexp "github.com/dlclark/regexp2"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
@@ -11,6 +14,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 const biz = "login"
@@ -29,6 +33,7 @@ type UserHandler struct {
 	passwordExp *regexp.Regexp
 	ijwt.Handler
 	cmd redis.Cmdable
+	l   logger.LoggerV1
 }
 
 func NewUserHandler(svc service.UserService,
@@ -68,7 +73,8 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	// POST /sms/login/code
 	// POST /code/sms
 	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
-	ug.POST("/login_sms", u.LoginSMS)
+	ug.POST("/login_sms", ginx.WrapBody[LoginSMSReq](
+		u.l.With(logger.String("method", "login sms")), u.LoginSMS))
 	ug.POST("/refresh_token", u.RefreshToken)
 }
 
@@ -124,63 +130,66 @@ func (u *UserHandler) RefreshToken(ctx *gin.Context) {
 	})
 }
 
-func (u *UserHandler) LoginSMS(ctx *gin.Context) {
-	type Req struct {
-		Phone string `json:"phone"`
-		Code  string `json:"code"`
-	}
-	var req Req
-	if err := ctx.Bind(&req); err != nil {
-		return
-	}
+type LoginSMSReq struct {
+	Phone string `json:"phone"`
+	Code  string `json:"code"`
+}
 
+func (u *UserHandler) LoginSMS(ctx *gin.Context, req LoginSMSReq) (Result, error) {
 	// 这边，可以加上各种校验
 	ok, err := u.codeSvc.Verify(ctx, biz, req.Phone, req.Code)
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
-		zap.L().Error("校验验证码出错", zap.Error(err),
-			// 不能这样打，因为手机号码是敏感数据，你不能达到日志里面
-			// 打印加密后的串
-			// 脱敏，152****1234
-			zap.String("手机号码", req.Phone))
+		//ctx.JSON(http.StatusOK, Result{
+		//	Code: 5,
+		//	Msg:  "系统错误",
+		//})
+		//zap.L().Error("校验验证码出错", zap.Error(err),
+		// 不能这样打，因为手机号码是敏感数据，你不能达到日志里面
+		// 打印加密后的串
+		// 脱敏，152****1234
+		//zap.String("手机号码", req.Phone))
 		// 最多最多就这样
-		zap.L().Debug("", zap.String("手机号码", req.Phone))
-		return
+		//zap.L().Debug("", zap.String("手机号码", req.Phone))
+		//return Result{Code: 5, Msg: "系统错误"}, err
+		return Result{Code: 5, Msg: "系统错误"}, fmt.Errorf("用户手机密码登录失败 %w", err)
 	}
 	if !ok {
-		ctx.JSON(http.StatusOK, Result{
+		//ctx.JSON(http.StatusOK, Result{
+		//	Code: 4,
+		//	Msg:  "验证码有误",
+		//})
+		return Result{
 			Code: 4,
 			Msg:  "验证码有误",
-		})
-		return
+		}, nil
 	}
 
 	// 我这个手机号，会不会是一个新用户呢？
 	// 这样子
 	user, err := u.svc.FindOrCreate(ctx, req.Phone)
 	if err != nil {
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
-		return
+		//ctx.JSON(http.StatusOK, Result{
+		//	Code: 5,
+		//	Msg:  "系统错误",
+		//})
+		return Result{Code: 5, Msg: "系统错误"}, fmt.Errorf("登录或者注册用户失败 %w", err)
 	}
 
 	if err = u.SetLoginToken(ctx, user.Id); err != nil {
 		// 记录日志
-		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
-			Msg:  "系统错误",
-		})
-		return
+		//ctx.JSON(http.StatusOK, Result{
+		//	Code: 5,
+		//	Msg:  "系统错误",
+		//})
+		return Result{Code: 5, Msg: "系统错误"}, fmt.Errorf("登录或者注册用户失败 %w", err)
 	}
 
-	ctx.JSON(http.StatusOK, Result{
+	//ctx.JSON(http.StatusOK, Result{
+	//	Msg: "验证码校验通过",
+	//})
+	return Result{
 		Msg: "验证码校验通过",
-	})
+	}, nil
 }
 
 func (u *UserHandler) SendLoginSMSCode(ctx *gin.Context) {
@@ -364,8 +373,46 @@ func (u *UserHandler) Logout(ctx *gin.Context) {
 	ctx.String(http.StatusOK, "退出登录成功")
 }
 
-func (u *UserHandler) Edit(ctx *gin.Context) {
+func (h *UserHandler) Edit(ctx *gin.Context) {
+	// 嵌入一段刷新过期时间的代码
+	type Req struct {
+		// 改邮箱，密码，或者能不能改手机号
 
+		Nickname string `json:"nickname"`
+		// YYYY-MM-DD
+		Birthday string `json:"birthday"`
+		AboutMe  string `json:"aboutMe"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	//sess := sessions.Default(ctx)
+	//sess.Get("uid")
+	uc, ok := ctx.MustGet("user").(ijwt.UserClaims)
+	if !ok {
+		//ctx.String(http.StatusOK, "系统错误")
+		ctx.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+	// 用户输入不对
+	birthday, err := time.Parse(time.DateOnly, req.Birthday)
+	if err != nil {
+		//ctx.String(http.StatusOK, "系统错误")
+		ctx.String(http.StatusOK, "生日格式不对")
+		return
+	}
+	err = h.svc.UpdateNonSensitiveInfo(ctx, domain.User{
+		Id:       uc.Uid,
+		Nickname: req.Nickname,
+		Birthday: birthday,
+		AboutMe:  req.AboutMe,
+	})
+	if err != nil {
+		ctx.String(http.StatusOK, "系统异常")
+		return
+	}
+	ctx.String(http.StatusOK, "更新成功")
 }
 
 func (u *UserHandler) ProfileJWT(ctx *gin.Context) {

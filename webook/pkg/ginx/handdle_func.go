@@ -11,9 +11,8 @@ func WrapReq[T any](fn func(ctx *gin.Context, req T, uc jwt.UserClaims) (Result,
 	}
 }
 
-type Result struct {
-	// 这个叫做业务错误码
-	Code int    `json:"code"`
-	Msg  string `json:"msg"`
-	Data any    `json:"data"`
-}
+//type Result struct { // 这个叫做业务错误码
+//	Code int    `json:"code"`
+//	Msg  string `json:"msg"`
+//	Data any    `json:"data"`
+//}

@@ -12,6 +12,11 @@ type User struct {
 	Password string
 	Phone    string
 
+	Nickname string
+	// YYYY-MM-DD
+	Birthday time.Time
+	AboutMe  string
+
 	// 不要组合，万一你将来可能还有 DingDingInfo，里面有同名字段 UnionID
 	WechatInfo WechatInfo
 	Ctime      time.Time

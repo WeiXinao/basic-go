@@ -20,6 +20,7 @@ type UserDAO interface {
 	FindByPhone(ctx context.Context, phone string) (User, error)
 	Insert(ctx context.Context, u User) error
 	FindByWechat(ctx context.Context, openID string) (User, error)
+	UpdateById(ctx context.Context, entity User) error
 }
 
 type DBProvider func() *gorm.DB
@@ -46,6 +47,20 @@ func NewUserDAO(db *gorm.DB) UserDAO {
 	//	atomic.StorePointer(&pt, unsafe.Pointer(&db))
 	//})
 	return res
+}
+
+func (dao *GORMUserDAO) UpdateById(ctx context.Context, entity User) error {
+
+	// 这种写法依赖于 GORM 的零值和主键更新特性
+	// Update 非零值 WHERE id = ?
+	//return dao.db.WithContext(ctx).Updates(&entity).Error
+	return dao.db.WithContext(ctx).Model(&entity).Where("id = ?", entity.Id).
+		Updates(map[string]any{
+			"utime":    time.Now().UnixMilli(),
+			"nickname": entity.Nickname,
+			"birthday": entity.Birthday,
+			"about_me": entity.AboutMe,
+		}).Error
 }
 
 func (dao *GORMUserDAO) FindByWechat(ctx context.Context, openID string) (User, error) {
@@ -100,6 +115,10 @@ type User struct {
 	Email    sql.NullString `gorm:"unique"`
 	Password string
 
+	Nickname string `gorm:"type=varchar(128)"`
+	// YYYY-MM-DD
+	Birthday int64
+	AboutMe  string `gorm:"type=varchar(4096)"`
 	// 唯一索引允许有多个空值
 	// 但是不能有多个 ""
 	Phone sql.NullString `gorm:"unique"`
