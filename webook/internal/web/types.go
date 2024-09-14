@@ -9,6 +9,11 @@ type handler interface {
 	RegisterRoutes(server *gin.Engine)
 }
 
+type Page struct {
+	Limit  int
+	Offset int
+}
+
 // 重构小技巧
 type Result = ginx.Result
 

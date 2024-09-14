@@ -5,6 +5,7 @@ import (
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/article"
 	logger "github.com/WeiXinao/basic-go/webook/pkg/logger"
+	"github.com/gin-gonic/gin"
 	"time"
 )
 
@@ -13,6 +14,9 @@ type ArticleService interface {
 	Withdraw(ctx context.Context, art domain.Article) error
 	Publish(ctx context.Context, art domain.Article) (int64, error)
 	PublishV1(ctx context.Context, art domain.Article) (int64, error)
+	GetByAuthor(ctx *gin.Context, uid int64, offset int, limit int) ([]domain.Article, error)
+	GetById(ctx *gin.Context, id int64) (domain.Article, error)
+	GetPubById(ctx *gin.Context, id int64) (domain.Article, error)
 }
 
 type articleService struct {
@@ -22,6 +26,18 @@ type articleService struct {
 	author article.ArticleAuthorRepository
 	reader article.ArticleReaderRepository
 	l      logger.LoggerV1
+}
+
+func (a *articleService) GetPubById(ctx *gin.Context, id int64) (domain.Article, error) {
+	return a.repo.GetPubById(ctx, id)
+}
+
+func (a *articleService) GetById(ctx *gin.Context, id int64) (domain.Article, error) {
+	return a.repo.GetById(ctx, id)
+}
+
+func (a *articleService) GetByAuthor(ctx *gin.Context, uid int64, offset int, limit int) ([]domain.Article, error) {
+	return a.repo.GetByAuthor(ctx, uid, offset, limit)
 }
 
 func NewArticleService(repo article.ArticleRepository) ArticleService {

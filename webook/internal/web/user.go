@@ -65,7 +65,7 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	ug.GET("/profile", u.ProfileJWT)
 	ug.POST("/signup", u.SignUp)
 	//ug.POST("/login", u.Login)
-	ug.POST("/login", u.LoginJWT)
+	ug.POST("/login", ginx.WrapBodyV1[LoginReq](u.LoginJWTV1))
 	ug.POST("/logout", u.LogoutJWT)
 	ug.POST("/edit", u.Edit)
 	// PUT "/login/sms/code" 发验证码
@@ -284,6 +284,43 @@ func (u *UserHandler) SignUp(ctx *gin.Context) {
 	}
 
 	ctx.String(http.StatusOK, "注册成功")
+}
+
+type LoginReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (u *UserHandler) LoginJWTV1(ctx *gin.Context, req LoginReq) (Result, error) {
+	user, err := u.svc.Login(ctx, req.Email, req.Password)
+	if err == service.ErrInvalidUserOrPassword {
+		//ctx.String(http.StatusOK, "用户名或密码不对")
+		return Result{
+			Code: 4,
+			Msg:  "用户名或密码不对",
+		}, nil
+	}
+	if err != nil {
+		//ctx.String(http.StatusOK, "系统错误")
+		return Result{
+			Code: 5,
+			Msg:  "系统错误",
+		}, err
+	}
+
+	if err = u.SetLoginToken(ctx, user.Id); err != nil {
+		//ctx.String(http.StatusOK, "系统错误")
+		return Result{
+			Code: 5,
+			Msg:  "系统错误",
+		}, err
+	}
+
+	//ctx.String(http.StatusOK, "登录成功")
+	return Result{
+		Code: 5,
+		Msg:  "登录成功",
+	}, err
 }
 
 func (u *UserHandler) LoginJWT(ctx *gin.Context) {

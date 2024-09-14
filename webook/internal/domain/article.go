@@ -1,5 +1,7 @@
 package domain
 
+import "time"
+
 // Article 可以同时表达制作库和线上库的概念吗？
 // 可以同时表达作者眼中的 Article 和读者眼中的 Article 吗？
 type Article struct {
@@ -9,6 +11,16 @@ type Article struct {
 	// Author 要从用户来
 	Author Author
 	Status ArticleStatus
+	Ctime  time.Time
+	Utime  time.Time
+}
+
+func (a Article) Abstract() string {
+	str := []rune(a.Content)
+	if len(str) > 128 {
+		str = str[:128]
+	}
+	return string(str)
 }
 
 type ArticleStatus uint8

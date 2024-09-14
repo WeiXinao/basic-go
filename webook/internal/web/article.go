@@ -5,8 +5,11 @@ import (
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
 	logger "github.com/WeiXinao/basic-go/webook/pkg/logger"
+	"github.com/WeiXinao/xkit/slice"
 	"github.com/gin-gonic/gin"
 	"net/http"
+	"strconv"
+	"time"
 )
 
 var _ handler = (*ArticleHandler)(nil)
@@ -34,6 +37,15 @@ func (a *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	g.POST("/edit", a.Edit)
 	g.POST("/publish", a.Publish)
 	g.POST("/withdraw", a.Withdraw)
+
+	// 创作者接口
+	// 按照道理来说，这边就是 GET 方法
+	// /list?offset=?&limit=?
+	g.POST("/list", a.List)
+	g.GET("/detail/:id", a.Detail)
+
+	pub := g.Group("/pub")
+	pub.GET("/:id", a.PubDetail)
 }
 
 func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
@@ -142,6 +154,139 @@ func (a *ArticleHandler) Edit(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, Result{
 		Msg:  "OK",
 		Data: id,
+	})
+}
+
+func (a *ArticleHandler) List(ctx *gin.Context) {
+	var page Page
+	if err := ctx.Bind(&page); err != nil {
+		return
+	}
+	uc := ctx.MustGet("claims").(*ijwt.UserClaims)
+	arts, err := a.svc.GetByAuthor(ctx, uc.Uid, page.Offset, page.Limit)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		a.l.Error("查找文章列表失败",
+			logger.Error(err),
+			logger.Int("offset", page.Offset),
+			logger.Int("limit", page.Limit),
+			logger.Int64("uid", uc.Uid))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Data: slice.Map[domain.Article](arts, func(idx int, src domain.Article) ArticleVO {
+			return ArticleVO{
+				Id:       src.Id,
+				Title:    src.Title,
+				Abstract: src.Abstract(),
+
+				//Content:    src.Content,
+				AuthorId: src.Author.Id,
+				// 列表，你不需要
+				//AuthorName: "",
+				Status: src.Status.ToUint8(),
+				Ctime:  src.Ctime.Format(time.DateTime),
+				Utime:  src.Utime.Format(time.DateTime),
+			}
+		}),
+	})
+}
+
+func (a *ArticleHandler) Detail(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "id 参数错误",
+		})
+		a.l.Warn("查询文章失败，id 格式不对",
+			logger.String("id", idStr),
+			logger.Error(err))
+		return
+	}
+	art, err := a.svc.GetById(ctx, id)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		a.l.Error("查询文章失败",
+			logger.Int64("id", id),
+			logger.Error(err))
+		return
+	}
+
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	if art.Author.Id != uc.Uid {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		a.l.Error("非法查询文章",
+			logger.Int64("id", id),
+			logger.Int64("uid", uc.Uid))
+		return
+	}
+
+	vo := ArticleVO{
+		Id:    art.Id,
+		Title: art.Title,
+		//Abstract:   art.Abstract(),
+
+		Content:  art.Content,
+		AuthorId: art.Author.Id,
+
+		// 列表，你不需要
+		//AuthorName: art.Author.Name,
+		Status: art.Status.ToUint8(),
+		Ctime:  art.Ctime.Format(time.DateTime),
+		Utime:  art.Utime.Format(time.DateTime),
+	}
+	ctx.JSON(http.StatusOK, Result{Data: vo})
+}
+
+func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
+	idStr := ctx.Param("id")
+	id, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 4,
+			Msg:  "id 参数错误",
+		})
+		a.l.Warn("查询文章失败，id 格式不对",
+			logger.String("id", idStr),
+			logger.Error(err))
+		return
+	}
+
+	art, err := a.svc.GetPubById(ctx, id)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		a.l.Error("查询文章失败, 系统错误",
+			logger.Error(err))
+		return
+	}
+
+	ctx.JSON(http.StatusOK, Result{
+		Data: ArticleVO{
+			Id:    art.Id,
+			Title: art.Title,
+
+			Content:    art.Content,
+			AuthorId:   art.Author.Id,
+			AuthorName: art.Author.Name,
+
+			Status: art.Status.ToUint8(),
+			Ctime:  art.Ctime.Format(time.DateTime),
+			Utime:  art.Utime.Format(time.DateTime),
+		},
 	})
 }
 
