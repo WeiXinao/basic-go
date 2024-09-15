@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
@@ -15,8 +16,10 @@ import (
 var _ handler = (*ArticleHandler)(nil)
 
 type ArticleHandler struct {
-	svc service.ArticleService
-	l   logger.LoggerV1
+	svc      service.ArticleService
+	interSvc service.InteractiveService
+	l        logger.LoggerV1
+	biz      string
 }
 
 func NewArticleHandler(svc service.ArticleService, l logger.LoggerV1) *ArticleHandler {
@@ -46,6 +49,8 @@ func (a *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 
 	pub := g.Group("/pub")
 	pub.GET("/:id", a.PubDetail)
+	// 传入一个参数，true 就是点赞，false 就是不点赞
+	pub.POST("/like", a.Like)
 }
 
 func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
@@ -273,6 +278,21 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 			logger.Error(err))
 		return
 	}
+	// 增加阅读计数。
+	// 这个功能是不是可以让前端，主动发一个 HTTP 请求，来增加一个计数？
+	go func() {
+		//	1. 如果你想摆脱原本主链路的超时控制，你就创建一个新的
+		//	2. 如果不想，你就用 ctx
+		newCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		er := a.interSvc.IncrReadCnt(newCtx, a.biz, art.Id)
+		if er != nil {
+			a.l.Error("更新阅读数失败",
+				logger.Int64("aid", art.Id),
+				logger.Error(er))
+		}
+
+	}()
 
 	ctx.JSON(http.StatusOK, Result{
 		Data: ArticleVO{
@@ -287,6 +307,41 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 			Ctime:  art.Ctime.Format(time.DateTime),
 			Utime:  art.Utime.Format(time.DateTime),
 		},
+	})
+}
+
+func (a *ArticleHandler) Like(ctx *gin.Context) {
+	type Req struct {
+		Id int64 `json:"id"`
+		//	true 就是点赞，false 就是不点赞
+		Like bool `json:"like"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	var err error
+	if req.Like {
+		// 点赞
+		err = a.interSvc.Like(ctx, a.biz, req.Id, uc.Uid)
+	} else {
+		// 取消点赞
+		err = a.interSvc.CancelLike(ctx, a.biz, req.Id, uc.Uid)
+	}
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		a.l.Error("点赞/取消点赞失败",
+			logger.Error(err),
+			logger.Int64("uid", uc.Uid),
+			logger.Int64("aid", req.Id))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
 	})
 }
 
