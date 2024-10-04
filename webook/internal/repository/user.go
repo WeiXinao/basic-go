@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrUserDuplicate = dao.ErrUserDuplicate
-	ErrUserNotFound  = dao.ErrUserNotFound
+	ErrUserDuplicate = dao.ErrDuplicateEmail
+	ErrUserNotFound  = dao.ErrRecordNotFound
 )
 
 // UserRepository 是核心，它有不同实现。

@@ -31,7 +31,7 @@ func InitWebServer() *gin.Engine {
 		cache.NewCodeCache,
 		artdao.NewGORMArticleDAO,
 		repository.NewCodeRepository,
-		article.NewArticleRepository,
+		article.NewCachedArticleRepository,
 		// service 部分
 		// 集成测试我们显式指定使用内存实现
 		ioc.InitSMSService,
@@ -61,7 +61,7 @@ func InitWebServer() *gin.Engine {
 //	wire.Build(thirdProvider,
 //		service.NewArticleService,
 //		web.NewArticleHandler,
-//		article.NewArticleRepository,
+//		article.NewCachedArticleRepository,
 //		artdao.NewGORMArticleDAO,
 //	)
 //	return &web.ArticleHandler{}
@@ -72,7 +72,7 @@ func InitArticleHandler(dao artdao.ArticleDAO) *web.ArticleHandler {
 		thirdProvider,
 		service.NewArticleService,
 		web.NewArticleHandler,
-		article.NewArticleRepository)
+		article.NewCachedArticleRepository)
 	return &web.ArticleHandler{}
 }
 

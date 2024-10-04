@@ -10,8 +10,8 @@ import (
 )
 
 var (
-	ErrUserDuplicate = errors.New("邮箱冲突")
-	ErrUserNotFound  = gorm.ErrRecordNotFound
+	ErrDuplicateEmail = errors.New("邮箱冲突")
+	ErrRecordNotFound = gorm.ErrRecordNotFound
 )
 
 type UserDAO interface {
@@ -101,7 +101,7 @@ func (dao *GORMUserDAO) Insert(ctx context.Context, u User) error {
 		const uniqueConflictsErrNo uint16 = 1062
 		if mysqlErr.Number == uniqueConflictsErrNo {
 			// 邮箱冲突 or 手机号码冲突
-			return ErrUserDuplicate
+			return ErrDuplicateEmail
 		}
 	}
 	return err

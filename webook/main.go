@@ -25,12 +25,15 @@ func main() {
 	//initViperRemote()
 	initViperV1()
 	initLogger()
-	keys := viper.AllKeys()
-	println(keys)
-	setting := viper.AllSettings()
-	fmt.Println(setting)
-	server := InitWebServer()
+	app := InitWebServer()
+	for _, c := range app.consumers {
+		err := c.Start()
+		if err != nil {
+			panic(err)
+		}
+	}
 
+	server := app.server
 	server.GET("/hello", func(ctx *gin.Context) {
 		ctx.String(http.StatusOK, "你好，你来了")
 	})
@@ -95,7 +98,7 @@ func initViperRemote() {
 
 func initViperV1() {
 	cfile := pflag.String("config",
-		"config/config.yaml", "指定配置文件路径")
+		"config/dev.yaml", "指定配置文件路径")
 	pflag.Parse()
 	viper.SetConfigFile(*cfile)
 	// 实时监听配置变更

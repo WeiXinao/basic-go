@@ -251,9 +251,13 @@ func (c *CachedArticleRepository) toDomain(art dao.Article) domain.Article {
 	}
 }
 
-func NewArticleRepository(dao dao.ArticleDAO) ArticleRepository {
+func NewCachedArticleRepository(dao dao.ArticleDAO,
+	userRepo repository.UserRepository,
+	cache cache.ArticleCache) ArticleRepository {
 	return &CachedArticleRepository{
-		dao: dao,
+		dao:      dao,
+		cache:    cache,
+		userRepo: userRepo,
 	}
 }
 

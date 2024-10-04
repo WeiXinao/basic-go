@@ -37,7 +37,7 @@ type UserHandler struct {
 }
 
 func NewUserHandler(svc service.UserService,
-	codeSvc service.CodeService, jwtHdl ijwt.Handler) *UserHandler {
+	codeSvc service.CodeService, jwtHdl ijwt.Handler, l logger.LoggerV1, cmd redis.Cmdable) *UserHandler {
 	const (
 		emailRegexPattern    = "^\\w+([-+.]\\w+)*@\\w+([-.]\\w+)*\\.\\w+([-.]\\w+)*$"
 		passwordRegexPattern = `^(?=.*[A-Za-z])(?=.*\d)(?=.*[$@$!%*#?&])[A-Za-z\d$@$!%*#?&]{8,}$`
@@ -50,6 +50,8 @@ func NewUserHandler(svc service.UserService,
 		passwordExp: passwordExp,
 		codeSvc:     codeSvc,
 		Handler:     jwtHdl,
+		l:           l,
+		cmd:         cmd,
 	}
 }
 

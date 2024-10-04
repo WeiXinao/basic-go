@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"github.com/bwmarrin/snowflake"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -19,6 +20,21 @@ type MongodbBDDAO struct {
 	// 代表的是线上库
 	liveCol *mongo.Collection
 	node    *snowflake.Node
+}
+
+func (m *MongodbBDDAO) GetByAuthor(ctx *gin.Context, uid int64, offset int, limit int) ([]Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongodbBDDAO) GetById(ctx *gin.Context, id int64) (Article, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (m *MongodbBDDAO) GetPubById(ctx *gin.Context, id int64) (PublishArticle, error) {
+	//TODO implement me
+	panic("implement me")
 }
 
 func (m *MongodbBDDAO) Insert(ctx context.Context, art Article) (int64, error) {

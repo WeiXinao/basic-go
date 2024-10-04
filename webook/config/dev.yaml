@@ -1,8 +1,8 @@
 db:
-  dsn: "root:root@tcp(192.168.5.4:3306)/webook"
+  dsn: "root:123456@tcp(192.168.5.4:3307)/webook"
 
 redis:
   addr: "192.168.5.4:6379"
-
-abc: "helloabc" # v1
-# abc: "helloabcdef" # v2
+kafka:
+  addr:
+    - "192.168.5.3:9094"

@@ -1,13 +1,13 @@
 package web
 
 import (
-	"context"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
 	logger "github.com/WeiXinao/basic-go/webook/pkg/logger"
 	"github.com/WeiXinao/xkit/slice"
 	"github.com/gin-gonic/gin"
+	"golang.org/x/sync/errgroup"
 	"net/http"
 	"strconv"
 	"time"
@@ -51,6 +51,7 @@ func (a *ArticleHandler) RegisterRoutes(server *gin.Engine) {
 	pub.GET("/:id", a.PubDetail)
 	// 传入一个参数，true 就是点赞，false 就是不点赞
 	pub.POST("/like", a.Like)
+	pub.POST("/collect", a.Collect)
 }
 
 func (a *ArticleHandler) Withdraw(ctx *gin.Context) {
@@ -268,31 +269,51 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 		return
 	}
 
-	art, err := a.svc.GetPubById(ctx, id)
+	var (
+		eg   errgroup.Group
+		art  domain.Article
+		intr domain.Interactive
+	)
+
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	eg.Go(func() error {
+		var er error
+		intr, er = a.interSvc.Get(ctx, a.biz, id, uc.Uid)
+		return er
+	})
+
+	eg.Go(func() error {
+		art, err = a.svc.GetPubById(ctx, id, uc.Uid)
+		return err
+	})
+
+	err = eg.Wait()
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
-			Code: 5,
 			Msg:  "系统错误",
+			Code: 5,
 		})
-		a.l.Error("查询文章失败, 系统错误",
+		a.l.Error("查询文章失败，系统错误",
+			logger.Int64("aid", id),
+			logger.Int64("uid", uc.Uid),
 			logger.Error(err))
 		return
 	}
+
 	// 增加阅读计数。
 	// 这个功能是不是可以让前端，主动发一个 HTTP 请求，来增加一个计数？
-	go func() {
-		//	1. 如果你想摆脱原本主链路的超时控制，你就创建一个新的
-		//	2. 如果不想，你就用 ctx
-		newCtx, cancel := context.WithTimeout(context.Background(), time.Second)
-		defer cancel()
-		er := a.interSvc.IncrReadCnt(newCtx, a.biz, art.Id)
-		if er != nil {
-			a.l.Error("更新阅读数失败",
-				logger.Int64("aid", art.Id),
-				logger.Error(er))
-		}
-
-	}()
+	//go func() {
+	//	1. 如果你想摆脱原本主链路的超时控制，你就创建一个新的
+	//	2. 如果不想，你就用 ctx
+	//	newCtx, cancel := context.WithTimeout(context.Background(), time.Second)
+	//	defer cancel()
+	//	er := a.interSvc.IncrReadCnt(newCtx, a.biz, art.Id)
+	//	if er != nil {
+	//		a.l.Error("更新阅读数失败",
+	//			logger.Int64("aid", art.Id),
+	//			logger.Error(er))
+	//	}
+	//}()
 
 	ctx.JSON(http.StatusOK, Result{
 		Data: ArticleVO{
@@ -302,6 +323,11 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 			Content:    art.Content,
 			AuthorId:   art.Author.Id,
 			AuthorName: art.Author.Name,
+			ReadCnt:    intr.ReadCnt,
+			CollectCnt: intr.CollectCnt,
+			LikeCnt:    intr.LikeCnt,
+			Liked:      intr.Liked,
+			Collected:  intr.Collected,
 
 			Status: art.Status.ToUint8(),
 			Ctime:  art.Ctime.Format(time.DateTime),
@@ -335,6 +361,34 @@ func (a *ArticleHandler) Like(ctx *gin.Context) {
 			Msg:  "系统错误",
 		})
 		a.l.Error("点赞/取消点赞失败",
+			logger.Error(err),
+			logger.Int64("uid", uc.Uid),
+			logger.Int64("aid", req.Id))
+		return
+	}
+	ctx.JSON(http.StatusOK, Result{
+		Msg: "OK",
+	})
+}
+
+func (a *ArticleHandler) Collect(ctx *gin.Context) {
+	type Req struct {
+		Id  int64 `json:"id"`
+		Cid int64 `json:"cid"`
+	}
+	var req Req
+	if err := ctx.Bind(&req); err != nil {
+		return
+	}
+	uc := ctx.MustGet("user").(ijwt.UserClaims)
+
+	err := a.interSvc.Collect(ctx, a.biz, req.Id, req.Cid, uc.Uid)
+	if err != nil {
+		ctx.JSON(http.StatusOK, Result{
+			Code: 5,
+			Msg:  "系统错误",
+		})
+		a.l.Error("收藏失败",
 			logger.Error(err),
 			logger.Int64("uid", uc.Uid),
 			logger.Int64("aid", req.Id))

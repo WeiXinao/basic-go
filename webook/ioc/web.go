@@ -2,6 +2,7 @@ package ioc
 
 import (
 	"context"
+	"fmt"
 	"github.com/WeiXinao/basic-go/webook/internal/web"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
 	"github.com/WeiXinao/basic-go/webook/internal/web/middleware"
@@ -23,6 +24,7 @@ func InitWebServer(mdls []gin.HandlerFunc, userHdl *web.UserHandler,
 	userHdl.RegisterRoutes(server)
 	articleHdl.RegisterRoutes(server)
 	oauth2WechatHdl.RegisterRoutes(server)
+	fmt.Println("InitWebServer run")
 	return server
 }
 

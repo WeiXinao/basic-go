@@ -59,7 +59,7 @@ func TestGORMUserDAO_Insert(t *testing.T) {
 				return mockDB
 			},
 			user:    User{},
-			wantErr: ErrUserDuplicate,
+			wantErr: ErrDuplicateEmail,
 		},
 		{
 			name: "数据库错误",
