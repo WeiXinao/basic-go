@@ -4,7 +4,9 @@ import (
 	"github.com/WeiXinao/basic-go/webook/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/prometheus/client_golang/prometheus"
 	"net/http"
+	"strconv"
 )
 
 // 这个东西，放到你们的 ginx 插件库里面去
@@ -13,7 +15,14 @@ import (
 // L 使用包变量
 var L logger.LoggerV1
 
-func WrapToken[C jwt.Claims](fn func(ctx *gin.Context, uc C) (Result, error)) gin.HandlerFunc {
+var vector *prometheus.CounterVec
+
+func InitCounter(opt prometheus.CounterOpts) {
+	vector = prometheus.NewCounterVec(opt, []string{"code"})
+	prometheus.MustRegister(vector)
+}
+
+func WrapClaims[C jwt.Claims](fn func(ctx *gin.Context, uc C) (Result, error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		val, ok := ctx.Get("user")
 		if !ok {
@@ -29,6 +38,7 @@ func WrapToken[C jwt.Claims](fn func(ctx *gin.Context, uc C) (Result, error)) gi
 		// 我的因为逻辑有可能要操作 ctx
 		// 你要读取 HTTP HEADER
 		res, err := fn(ctx, c)
+		vector.WithLabelValues(strconv.Itoa(res.Code)).Inc()
 		if err != nil {
 			//	开始处理 error，其实就是记录一下日志
 			L.Error("处理业务逻辑出错",
@@ -41,7 +51,7 @@ func WrapToken[C jwt.Claims](fn func(ctx *gin.Context, uc C) (Result, error)) gi
 	}
 }
 
-func WrapBodyToken[T any, C jwt.Claims](fn func(ctx *gin.Context, req T, uc C) (Result, error)) gin.HandlerFunc {
+func WrapBodyAndClaims[T any, C jwt.Claims](fn func(ctx *gin.Context, req T, uc C) (Result, error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		var req T
 		if err := ctx.Bind(&req); err != nil {
@@ -62,6 +72,7 @@ func WrapBodyToken[T any, C jwt.Claims](fn func(ctx *gin.Context, req T, uc C) (
 		// 我的因为逻辑有可能要操作 ctx
 		// 你要读取 HTTP HEADER
 		res, err := fn(ctx, req, c)
+		vector.WithLabelValues(strconv.Itoa(res.Code)).Inc()
 		if err != nil {
 			//	开始处理 error，其实就是记录一下日志
 			L.Error("处理业务逻辑出错",
@@ -84,6 +95,7 @@ func WrapBodyV1[T any](fn func(ctx *gin.Context, req T) (Result, error)) gin.Han
 		// 我的因为逻辑有可能要操作 ctx
 		// 你要读取 HTTP HEADER
 		res, err := fn(ctx, req)
+		vector.WithLabelValues(strconv.Itoa(res.Code)).Inc()
 		if err != nil {
 			//	开始处理 error，其实就是记录一下日志
 			L.Error("处理业务逻辑出错",
@@ -106,6 +118,7 @@ func WrapBody[T any](l logger.LoggerV1, fn func(ctx *gin.Context, req T) (Result
 		// 我的因为逻辑有可能要操作 ctx
 		// 你要读取 HTTP HEADER
 		res, err := fn(ctx, req)
+		vector.WithLabelValues(strconv.Itoa(res.Code)).Inc()
 		if err != nil {
 			//	开始处理 error，其实就是记录一下日志
 			l.Error("处理业务逻辑出错",

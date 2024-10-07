@@ -6,11 +6,14 @@ import (
 	"github.com/WeiXinao/basic-go/webook/internal/web"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
 	"github.com/WeiXinao/basic-go/webook/internal/web/middleware"
+	"github.com/WeiXinao/basic-go/webook/pkg/ginx"
 	"github.com/WeiXinao/basic-go/webook/pkg/ginx/middlewares/logger"
+	"github.com/WeiXinao/basic-go/webook/pkg/ginx/middlewares/prometheus"
 	logger2 "github.com/WeiXinao/basic-go/webook/pkg/logger"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
 	"strings"
@@ -38,6 +41,19 @@ func InitMiddlewares(redisClient redis.Cmdable,
 		ok := viper.GetBool("web.logreq")
 		bd.AllowReqBody(ok)
 	})
+	pb := &prometheus.Builder{
+		Namespace: "xiaoxin",
+		Subsystem: "webook",
+		Name:      "gin_http",
+		Help:      "统计 GIN 的 HTTP 接口数据",
+	}
+	ginx.InitCounter(prometheus2.CounterOpts{
+		Namespace: "xiaoxin",
+		Subsystem: "webook",
+		Name:      "biz_code",
+		Help:      "统计业务错误码",
+	})
+
 	return []gin.HandlerFunc{
 		corsHdl(),
 		bd.Build(),
@@ -51,6 +67,8 @@ func InitMiddlewares(redisClient redis.Cmdable,
 			IgnorePaths("/users/login").
 			Build(),
 		//ratelimit.NewBuilder(redisClient, time.Second, 100).Build(),
+		pb.BuildResponseTime(),
+		pb.BuildActiveRequest(),
 	}
 }
 

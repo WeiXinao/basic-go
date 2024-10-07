@@ -50,7 +50,7 @@ func InitWebServer() *App {
 	client := ioc.InitSaramaClient()
 	syncProducer := ioc.InitSyncProducer(client)
 	producer := article3.NewSaramaSyncProducer(syncProducer)
-	articleService := service.NewArticleService(articleRepository, producer)
+	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
 	articleHandler := web.NewArticleHandler(articleService, loggerV1)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	interactiveDAO := dao.NewGORMInteractiveDAO(db)
