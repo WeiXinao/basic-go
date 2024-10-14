@@ -22,6 +22,11 @@ type MongodbBDDAO struct {
 	node    *snowflake.Node
 }
 
+func (m *MongodbBDDAO) ListPub(ctx context.Context, start time.Time, offset int, limit int) ([]PublishArticle, error) {
+	//TODO implement me
+	panic("implement me")
+}
+
 func (m *MongodbBDDAO) GetByAuthor(ctx *gin.Context, uid int64, offset int, limit int) ([]Article, error) {
 	//TODO implement me
 	panic("implement me")

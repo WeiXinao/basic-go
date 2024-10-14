@@ -113,3 +113,17 @@ func (mr *MockUserRepositoryMockRecorder) FindByWechat(ctx, openID any) *gomock.
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "FindByWechat", reflect.TypeOf((*MockUserRepository)(nil).FindByWechat), ctx, openID)
 }
+
+// UpdateNonZeroFields mocks base method.
+func (m *MockUserRepository) UpdateNonZeroFields(ctx context.Context, user domain.User) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateNonZeroFields", ctx, user)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdateNonZeroFields indicates an expected call of UpdateNonZeroFields.
+func (mr *MockUserRepositoryMockRecorder) UpdateNonZeroFields(ctx, user any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNonZeroFields", reflect.TypeOf((*MockUserRepository)(nil).UpdateNonZeroFields), ctx, user)
+}

@@ -16,6 +16,7 @@ import (
 	prometheus2 "github.com/prometheus/client_golang/prometheus"
 	"github.com/redis/go-redis/v9"
 	"github.com/spf13/viper"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/gin-gonic/gin/otelgin"
 	"strings"
 	"time"
 )
@@ -69,6 +70,7 @@ func InitMiddlewares(redisClient redis.Cmdable,
 		//ratelimit.NewBuilder(redisClient, time.Second, 100).Build(),
 		pb.BuildResponseTime(),
 		pb.BuildActiveRequest(),
+		otelgin.Middleware("webook"),
 	}
 }
 

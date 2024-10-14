@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"github.com/WeiXinao/basic-go/webook/ioc"
 	"github.com/fsnotify/fsnotify"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -12,6 +14,7 @@ import (
 	_ "github.com/spf13/viper/remote"
 	"go.uber.org/zap"
 	"net/http"
+	"time"
 )
 
 func main() {
@@ -26,6 +29,12 @@ func main() {
 	//initViperRemote()
 	initViperV1()
 	initLogger()
+	tpCancel := ioc.InitOTEL()
+	defer func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		tpCancel(ctx)
+	}()
 	app := InitWebServer()
 	initPrometheus()
 	for _, c := range app.consumers {
@@ -34,6 +43,12 @@ func main() {
 			panic(err)
 		}
 	}
+
+	app.cron.Start()
+	defer func() {
+		// 等待定时任务退出
+		<-app.cron.Stop().Done()
+	}()
 
 	server := app.server
 	server.GET("/hello", func(ctx *gin.Context) {

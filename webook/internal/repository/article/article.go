@@ -24,6 +24,7 @@ type ArticleRepository interface {
 	GetByAuthor(ctx *gin.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx *gin.Context, id int64) (domain.Article, error)
 	GetPubById(ctx *gin.Context, id int64) (domain.Article, error)
+	ListPub(ctx context.Context, start time.Time, offset int, limit int) ([]domain.Article, error)
 }
 
 type CachedArticleRepository struct {
@@ -42,6 +43,16 @@ type CachedArticleRepository struct {
 	// 那么就只能利用 db 开启事务后，创建基于事务的 DAO
 	// 或者，去掉 DAO 这一层，在 repository 的实现中，直接操作 db
 	db *gorm.DB
+}
+
+func (c *CachedArticleRepository) ListPub(ctx context.Context, start time.Time, offset int, limit int) ([]domain.Article, error) {
+	arts, err := c.dao.ListPub(ctx, start, offset, limit)
+	if err != nil {
+		return nil, err
+	}
+	return slice.Map[dao.PublishArticle, domain.Article](arts, func(idx int, src dao.PublishArticle) domain.Article {
+		return c.toDomain(dao.Article(src))
+	}), nil
 }
 
 func (c *CachedArticleRepository) GetPubById(ctx *gin.Context, id int64) (domain.Article, error) {

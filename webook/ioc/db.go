@@ -9,6 +9,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	glogger "gorm.io/gorm/logger"
+	"gorm.io/plugin/opentelemetry/tracing"
 	"gorm.io/plugin/prometheus"
 	"time"
 )
@@ -108,6 +109,12 @@ func InitDB(l logger.LoggerV1) *gorm.DB {
 	// 要用原子操作
 	//return db
 	//})
+
+	err = db.Use(tracing.NewPlugin(tracing.WithoutMetrics(),
+		tracing.WithDBName("webook")))
+	if err != nil {
+		panic(err)
+	}
 
 	err = dao.InitTable(db)
 	if err != nil {

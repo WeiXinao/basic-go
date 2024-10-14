@@ -11,6 +11,7 @@ import (
 	"time"
 )
 
+//go:generate mockgen -source=./article.go -package=svcmocks -destination=./mocks/article.mock.go ArticleService
 type ArticleService interface {
 	Save(ctx context.Context, art domain.Article) (int64, error)
 	Withdraw(ctx context.Context, art domain.Article) error
@@ -19,6 +20,7 @@ type ArticleService interface {
 	GetByAuthor(ctx *gin.Context, uid int64, offset int, limit int) ([]domain.Article, error)
 	GetById(ctx *gin.Context, id int64) (domain.Article, error)
 	GetPubById(ctx *gin.Context, id int64, uid int64) (domain.Article, error)
+	ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error)
 }
 
 type articleService struct {
@@ -31,6 +33,10 @@ type articleService struct {
 	l      logger.LoggerV1
 
 	ch chan readInfo
+}
+
+func (a *articleService) ListPub(ctx context.Context, start time.Time, offset, limit int) ([]domain.Article, error) {
+	return a.repo.ListPub(ctx, start, offset, limit)
 }
 
 type readInfo struct {

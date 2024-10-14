@@ -58,3 +58,11 @@ services:
       - ~/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+  zipkin:
+    image: "openzipkin/zipkin"
+    ports:
+      - "9411:9411"
+  grafana:
+    image: "grafana/grafana-enterprise:10.2.0"
+    ports:
+      - "3000:3000"

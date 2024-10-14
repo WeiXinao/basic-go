@@ -14,6 +14,7 @@ import (
 	reflect "reflect"
 
 	domain "github.com/WeiXinao/basic-go/webook/internal/domain"
+	gin "github.com/gin-gonic/gin"
 	gomock "go.uber.org/mock/gomock"
 )
 
@@ -53,6 +54,80 @@ func (m *MockArticleRepository) Create(ctx context.Context, art domain.Article) 
 func (mr *MockArticleRepositoryMockRecorder) Create(ctx, art any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticleRepository)(nil).Create), ctx, art)
+}
+
+// GetByAuthor mocks base method.
+func (m *MockArticleRepository) GetByAuthor(ctx *gin.Context, uid int64, offset, limit int) ([]domain.Article, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByAuthor", ctx, uid, offset, limit)
+	ret0, _ := ret[0].([]domain.Article)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByAuthor indicates an expected call of GetByAuthor.
+func (mr *MockArticleRepositoryMockRecorder) GetByAuthor(ctx, uid, offset, limit any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAuthor", reflect.TypeOf((*MockArticleRepository)(nil).GetByAuthor), ctx, uid, offset, limit)
+}
+
+// GetById mocks base method.
+func (m *MockArticleRepository) GetById(ctx *gin.Context, id int64) (domain.Article, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetById", ctx, id)
+	ret0, _ := ret[0].(domain.Article)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetById indicates an expected call of GetById.
+func (mr *MockArticleRepositoryMockRecorder) GetById(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetById", reflect.TypeOf((*MockArticleRepository)(nil).GetById), ctx, id)
+}
+
+// GetPubById mocks base method.
+func (m *MockArticleRepository) GetPubById(ctx *gin.Context, id int64) (domain.Article, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPubById", ctx, id)
+	ret0, _ := ret[0].(domain.Article)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPubById indicates an expected call of GetPubById.
+func (mr *MockArticleRepositoryMockRecorder) GetPubById(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPubById", reflect.TypeOf((*MockArticleRepository)(nil).GetPubById), ctx, id)
+}
+
+// Sync mocks base method.
+func (m *MockArticleRepository) Sync(ctx context.Context, art domain.Article) (int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Sync", ctx, art)
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Sync indicates an expected call of Sync.
+func (mr *MockArticleRepositoryMockRecorder) Sync(ctx, art any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Sync", reflect.TypeOf((*MockArticleRepository)(nil).Sync), ctx, art)
+}
+
+// SyncStatus mocks base method.
+func (m *MockArticleRepository) SyncStatus(ctx context.Context, id, author int64, status domain.ArticleStatus) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SyncStatus", ctx, id, author, status)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SyncStatus indicates an expected call of SyncStatus.
+func (mr *MockArticleRepositoryMockRecorder) SyncStatus(ctx, id, author, status any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SyncStatus", reflect.TypeOf((*MockArticleRepository)(nil).SyncStatus), ctx, id, author, status)
 }
 
 // Update mocks base method.
