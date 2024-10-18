@@ -7,7 +7,7 @@ toolchain go1.22.0
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/IBM/sarama v1.43.3
-	github.com/WeiXinao/xkit v0.0.0-20241011094904-2d760f830c82
+	github.com/WeiXinao/xkit v0.0.0-20241018025123-37479330e167
 	github.com/alibabacloud-go/darabonba-openapi v0.2.1
 	github.com/alibabacloud-go/dysmsapi-20170525/v2 v2.0.18
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.11
@@ -69,6 +69,7 @@ require (
 	github.com/aliyun/credentials-go v1.1.2 // indirect
 	github.com/armon/go-metrics v0.4.1 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
+	github.com/bradfitz/gomemcache v0.0.0-20230905024940-24af94b03874 // indirect
 	github.com/bytedance/sonic v1.12.2 // indirect
 	github.com/bytedance/sonic/loader v0.2.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

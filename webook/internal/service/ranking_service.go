@@ -38,7 +38,7 @@ func (b *BatchRankingService) TopN(ctx context.Context) error {
 	}
 	// 最终是要放到缓存里面
 	// 存到缓存里面
-	return b.repo.ReplaceToN(ctx, arts)
+	return b.repo.ReplaceTopN(ctx, arts)
 }
 
 func (b *BatchRankingService) topN(ctx context.Context) ([]domain.Article, error) {

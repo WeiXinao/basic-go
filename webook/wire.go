@@ -34,6 +34,7 @@ func InitWebServer() *App {
 		ioc.InitLogger,
 		ioc.InitSaramaClient,
 		ioc.InitSyncProducer,
+		ioc.InitRlockClient,
 
 		// 初始化 DAO
 		dao.NewUserDAO,
@@ -51,6 +52,7 @@ func InitWebServer() *App {
 		//	cache 部分
 		cache.NewUserCache,
 		cache.NewCodeCache,
+		//cache.NewMemcachedCodeCache,
 		cache.NewArticleRedisCache,
 
 		// repository 部分

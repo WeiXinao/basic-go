@@ -3,12 +3,15 @@ package integration
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"encoding/json"
 	"github.com/WeiXinao/basic-go/webook/internal/integration/startup"
+	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
 	"github.com/WeiXinao/basic-go/webook/internal/web"
 	"github.com/WeiXinao/basic-go/webook/ioc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -178,6 +181,98 @@ func TestUserHandler_e2e_SendLoginSMSCode(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tc.wantBody, webRes)
 			tc.after(t)
+		})
+	}
+}
+
+func TestUserHandler_e2e_LoginJWT(t *testing.T) {
+	server := startup.InitWebServer()
+	db := startup.InitTestDB()
+	testCases := []struct {
+		name         string
+		before       func(t *testing.T, email string, password string)
+		after        func(t *testing.T, email string, password string)
+		email        string
+		password     string
+		readPassword string
+		wantCode     int
+		wantBody     web.Result
+	}{
+		{
+			name: "登录成功",
+			before: func(t *testing.T, email string, password string) {
+				bcryptPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+				require.NoError(t, err)
+				err = db.Create(&dao.User{
+					Email: sql.NullString{
+						String: email,
+						Valid:  true,
+					},
+					Password: string(bcryptPassword),
+				}).Error
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T, email string, password string) {
+				err := db.Where("email = ?", email).Delete(&dao.User{}).Error
+				require.NoError(t, err)
+			},
+			email:        "1632967698@qq.com",
+			password:     "123456",
+			readPassword: "123456",
+			wantCode:     http.StatusOK,
+			wantBody: web.Result{
+				Code: 5,
+				Msg:  "登录成功",
+			},
+		},
+		{
+			name: "用户名或密码不对",
+			before: func(t *testing.T, email string, password string) {
+				bcryptPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+				require.NoError(t, err)
+				err = db.Create(&dao.User{
+					Email: sql.NullString{
+						String: email,
+						Valid:  true,
+					},
+					Password: string(bcryptPassword),
+				}).Error
+				require.NoError(t, err)
+			},
+			after: func(t *testing.T, email string, password string) {
+				err := db.Where("email = ?", email).Delete(&dao.User{}).Error
+				require.NoError(t, err)
+			},
+			email:        "1632967698@qq.com",
+			password:     "123456",
+			readPassword: "123",
+			wantCode:     http.StatusOK,
+			wantBody: web.Result{
+				Code: 4,
+				Msg:  "用户名或密码不对",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			tc.before(t, tc.email, tc.password)
+			reqBody := web.LoginReq{
+				Email:    tc.email,
+				Password: tc.readPassword,
+			}
+			reqBytes, err := json.Marshal(reqBody)
+			assert.NoError(t, err)
+			req, err := http.NewRequest(http.MethodPost, "/users/login",
+				bytes.NewReader(reqBytes))
+			req.Header.Set("Content-Type", "application/json")
+			resp := httptest.NewRecorder()
+			server.ServeHTTP(resp, req)
+			assert.Equal(t, tc.wantCode, resp.Code)
+			var webRes web.Result
+			err = json.NewDecoder(resp.Body).Decode(&webRes)
+			assert.NoError(t, err)
+			assert.Equal(t, webRes, tc.wantBody)
+			tc.after(t, tc.email, tc.password)
 		})
 	}
 }

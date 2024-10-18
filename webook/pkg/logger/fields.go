@@ -7,6 +7,10 @@ func String(key, val string) Field {
 	}
 }
 
+func Bool(key string, val bool) Field {
+	return Field{Key: key, Value: val}
+}
+
 func Int(key string, val int) Field {
 	return Field{
 		Key:   key,

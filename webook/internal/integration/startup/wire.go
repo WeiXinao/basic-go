@@ -3,6 +3,8 @@
 package startup
 
 import (
+	artEvent "github.com/WeiXinao/basic-go/webook/internal/events/article"
+	"github.com/WeiXinao/basic-go/webook/internal/job"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/article"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/cache"
@@ -16,34 +18,58 @@ import (
 	"github.com/google/wire"
 )
 
-var thirdProvider = wire.NewSet(InitRedis, InitTestDB, InitLog)
+var thirdProvider = wire.NewSet(
+	InitRedis, InitTestDB,
+	InitSaramaClient,
+	InitSyncProducer,
+	InitLog)
+
+var jobProviderSet = wire.NewSet(
+	service.NewCronJobService,
+	repository.NewPreemptJobRepository,
+	dao.NewGormJobDAO)
+
 var userSvcProvider = wire.NewSet(
 	dao.NewUserDAO,
 	cache.NewUserCache,
 	repository.NewUserRepository,
 	service.NewUserService)
 
+var articleSvcProvider = wire.NewSet(
+	article.NewCachedArticleRepository,
+	cache.NewArticleRedisCache,
+	artdao.NewGORMArticleDAO,
+	service.NewArticleService)
+
+var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO,
+	cache.NewInteractiveRedisCache,
+	repository.NewCachedInteractiveRepository,
+	service.NewInteractiveService)
+
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
-		//articlSvcProvider,
+		articleSvcProvider,
+		//interactiveSvcSet,
+
+		// cache 部分
 		cache.NewCodeCache,
-		artdao.NewGORMArticleDAO,
+
+		// repository 部分
 		repository.NewCodeRepository,
-		article.NewCachedArticleRepository,
+		artEvent.NewSaramaSyncProducer,
+
 		// service 部分
 		// 集成测试我们显式指定使用内存实现
 		ioc.InitSMSService,
-
-		// 指定啥也不干的 wechat service
-		InitPhantomWechatService,
 		service.NewCodeService,
-		service.NewArticleService,
+		InitPhantomWechatService,
+
 		// handler 部分
 		web.NewUserHandler,
-		web.NewOAuth2WechatHandler,
 		web.NewArticleHandler,
+		web.NewOAuth2WechatHandler,
 		InitWechatHandlerConfig,
 		ijwt.NewRedisJWTHandler,
 
@@ -70,10 +96,19 @@ func InitWebServer() *gin.Engine {
 func InitArticleHandler(dao artdao.ArticleDAO) *web.ArticleHandler {
 	wire.Build(
 		thirdProvider,
+		userSvcProvider,
+		//interactiveSvcSet,
+		article.NewCachedArticleRepository,
+		cache.NewArticleRedisCache,
 		service.NewArticleService,
-		web.NewArticleHandler,
-		article.NewCachedArticleRepository)
+		artEvent.NewSaramaSyncProducer,
+		web.NewArticleHandler)
 	return &web.ArticleHandler{}
+}
+
+func InitJobScheduler() *job.Scheduler {
+	wire.Build(jobProviderSet, thirdProvider, job.NewScheduler)
+	return &job.Scheduler{}
 }
 
 func InitUserSvc() service.UserService {

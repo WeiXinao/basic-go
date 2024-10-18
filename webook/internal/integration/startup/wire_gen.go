@@ -7,6 +7,8 @@
 package startup
 
 import (
+	article3 "github.com/WeiXinao/basic-go/webook/internal/events/article"
+	"github.com/WeiXinao/basic-go/webook/internal/job"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
 	article2 "github.com/WeiXinao/basic-go/webook/internal/repository/article"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/cache"
@@ -36,24 +38,47 @@ func InitWebServer() *gin.Engine {
 	codeRepository := repository.NewCodeRepository(codeCache)
 	smsService := ioc.InitSMSService(cmdable)
 	codeService := service.NewCodeService(codeRepository, smsService)
-	userHandler := web.NewUserHandler(userService, codeService, handler)
+	userHandler := web.NewUserHandler(userService, codeService, handler, loggerV1, cmdable)
 	wechatService := InitPhantomWechatService(loggerV1)
 	wechatHandlerConfig := InitWechatHandlerConfig()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler, wechatHandlerConfig)
 	articleDAO := article.NewGORMArticleDAO(gormDB)
-	articleRepository := article2.NewCachedArticleRepository(articleDAO)
-	articleService := service.NewArticleService(articleRepository)
+	articleCache := cache.NewArticleRedisCache(cmdable)
+	articleRepository := article2.NewCachedArticleRepository(articleDAO, userRepository, articleCache)
+	client := InitSaramaClient()
+	syncProducer := InitSyncProducer(client)
+	producer := article3.NewSaramaSyncProducer(syncProducer)
+	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
 	articleHandler := web.NewArticleHandler(articleService, loggerV1)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	return engine
 }
 
 func InitArticleHandler(dao2 article.ArticleDAO) *web.ArticleHandler {
-	articleRepository := article2.NewCachedArticleRepository(dao2)
-	articleService := service.NewArticleService(articleRepository)
+	gormDB := InitTestDB()
+	userDAO := dao.NewUserDAO(gormDB)
+	cmdable := InitRedis()
+	userCache := cache.NewUserCache(cmdable)
+	userRepository := repository.NewUserRepository(userDAO, userCache)
+	articleCache := cache.NewArticleRedisCache(cmdable)
+	articleRepository := article2.NewCachedArticleRepository(dao2, userRepository, articleCache)
+	client := InitSaramaClient()
+	syncProducer := InitSyncProducer(client)
+	producer := article3.NewSaramaSyncProducer(syncProducer)
 	loggerV1 := InitLog()
+	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
 	articleHandler := web.NewArticleHandler(articleService, loggerV1)
 	return articleHandler
+}
+
+func InitJobScheduler() *job.Scheduler {
+	gormDB := InitTestDB()
+	jobDAO := dao.NewGormJobDAO(gormDB)
+	cronJobRepository := repository.NewPreemptJobRepository(jobDAO)
+	loggerV1 := InitLog()
+	cronJobService := service.NewCronJobService(cronJobRepository, loggerV1)
+	scheduler := job.NewScheduler(cronJobService, loggerV1)
+	return scheduler
 }
 
 func InitUserSvc() service.UserService {
@@ -75,6 +100,16 @@ func InitJwtHdl() jwt.Handler {
 
 // wire.go:
 
-var thirdProvider = wire.NewSet(InitRedis, InitTestDB, InitLog)
+var thirdProvider = wire.NewSet(
+	InitRedis, InitTestDB,
+	InitSaramaClient,
+	InitSyncProducer,
+	InitLog)
+
+var jobProviderSet = wire.NewSet(service.NewCronJobService, repository.NewPreemptJobRepository, dao.NewGormJobDAO)
 
 var userSvcProvider = wire.NewSet(dao.NewUserDAO, cache.NewUserCache, repository.NewUserRepository, service.NewUserService)
+
+var articleSvcProvider = wire.NewSet(article2.NewCachedArticleRepository, cache.NewArticleRedisCache, article.NewGORMArticleDAO, service.NewArticleService)
+
+var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)

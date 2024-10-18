@@ -65,10 +65,11 @@ func (r *RankingJob) Run() error {
 			if er != nil {
 				//	续约失败了
 				//	你也没办法中断当下正在调度的热榜计算（如果有）
-				r.lockLock.Lock()
-				r.lock = nil
-				r.lockLock.Unlock()
+				r.l.Error("续约失败", logger.Error(er))
 			}
+			r.lockLock.Lock()
+			r.lock = nil
+			r.lockLock.Unlock()
 		}()
 	}
 	// 这边你就是拿到了锁

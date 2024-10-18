@@ -4,13 +4,14 @@ import (
 	"github.com/WeiXinao/basic-go/webook/internal/job"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	"github.com/WeiXinao/basic-go/webook/pkg/logger"
+	rlock "github.com/gotomicro/redis-lock"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/robfig/cron/v3"
 	"time"
 )
 
-func InitRankingJob(svc service.RankingService) *job.RankingJob {
-	return job.NewRankingJob(svc, time.Second*30)
+func InitRankingJob(svc service.RankingService, client *rlock.Client, l logger.LoggerV1) *job.RankingJob {
+	return job.NewRankingJob(svc, l, client, time.Second*30)
 }
 
 func InitJobs(l logger.LoggerV1, rjob *job.RankingJob) *cron.Cron {

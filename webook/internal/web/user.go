@@ -75,8 +75,10 @@ func (u *UserHandler) RegisterRoutes(server *gin.Engine) {
 	// POST /sms/login/code
 	// POST /code/sms
 	ug.POST("/login_sms/code/send", u.SendLoginSMSCode)
-	ug.POST("/login_sms", ginx.WrapBody[LoginSMSReq](
-		u.l.With(logger.String("method", "login sms")), u.LoginSMS))
+	//ug.POST("/login_sms", ginx.WrapBody[LoginSMSReq](
+	//	u.l.With(logger.String("method", "login sms")), u.LoginSMS))
+	ug.POST("/login_sms", ginx.WrapBodyV1[LoginSMSReq](
+		u.LoginSMS))
 	ug.POST("/refresh_token", u.RefreshToken)
 }
 
