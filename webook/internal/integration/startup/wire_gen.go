@@ -7,6 +7,10 @@
 package startup
 
 import (
+	repository2 "github.com/WeiXinao/basic-go/webook/interactive/repository"
+	cache2 "github.com/WeiXinao/basic-go/webook/interactive/repository/cache"
+	dao2 "github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
+	service2 "github.com/WeiXinao/basic-go/webook/interactive/service"
 	article3 "github.com/WeiXinao/basic-go/webook/internal/events/article"
 	"github.com/WeiXinao/basic-go/webook/internal/job"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
@@ -29,8 +33,8 @@ func InitWebServer() *gin.Engine {
 	loggerV1 := InitLog()
 	handler := jwt.NewRedisJWTHandler(cmdable)
 	v := ioc.InitMiddlewares(cmdable, loggerV1, handler)
-	gormDB := InitDB()
-	userDAO := dao.NewUserDAO(gormDB)
+	db := InitDB()
+	userDAO := dao.NewUserDAO(db)
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository, loggerV1)
@@ -42,7 +46,7 @@ func InitWebServer() *gin.Engine {
 	wechatService := InitPhantomWechatService(loggerV1)
 	wechatHandlerConfig := InitWechatHandlerConfig()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler, wechatHandlerConfig)
-	articleDAO := article.NewGORMArticleDAO(gormDB)
+	articleDAO := article.NewGORMArticleDAO(db)
 	articleCache := cache.NewArticleRedisCache(cmdable)
 	articleRepository := article2.NewCachedArticleRepository(articleDAO, userRepository, articleCache)
 	client := InitSaramaClient()
@@ -55,8 +59,8 @@ func InitWebServer() *gin.Engine {
 }
 
 func InitArticleHandler(dao2 article.ArticleDAO) *web.ArticleHandler {
-	gormDB := InitDB()
-	userDAO := dao.NewUserDAO(gormDB)
+	db := InitDB()
+	userDAO := dao.NewUserDAO(db)
 	cmdable := InitRedis()
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
@@ -71,19 +75,19 @@ func InitArticleHandler(dao2 article.ArticleDAO) *web.ArticleHandler {
 	return articleHandler
 }
 
-func InitInteractiveService() service.InteractiveService {
-	gormDB := InitDB()
-	interactiveDAO := dao.NewGORMInteractiveDAO(gormDB)
+func InitInteractiveService() service2.InteractiveService {
+	db := InitDB()
+	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
 	cmdable := InitRedis()
-	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
-	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
-	interactiveService := service.NewInteractiveService(interactiveRepository)
+	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service2.NewInteractiveService(interactiveRepository)
 	return interactiveService
 }
 
 func InitJobScheduler() *job.Scheduler {
-	gormDB := InitDB()
-	jobDAO := dao.NewGormJobDAO(gormDB)
+	db := InitDB()
+	jobDAO := dao.NewGormJobDAO(db)
 	cronJobRepository := repository.NewPreemptJobRepository(jobDAO)
 	loggerV1 := InitLog()
 	cronJobService := service.NewCronJobService(cronJobRepository, loggerV1)
@@ -92,8 +96,8 @@ func InitJobScheduler() *job.Scheduler {
 }
 
 func InitUserSvc() service.UserService {
-	gormDB := InitDB()
-	userDAO := dao.NewUserDAO(gormDB)
+	db := InitDB()
+	userDAO := dao.NewUserDAO(db)
 	cmdable := InitRedis()
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
@@ -122,4 +126,4 @@ var userSvcProvider = wire.NewSet(dao.NewUserDAO, cache.NewUserCache, repository
 
 var articleSvcProvider = wire.NewSet(article2.NewCachedArticleRepository, cache.NewArticleRedisCache, article.NewGORMArticleDAO, service.NewArticleService)
 
-var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
+var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, cache2.NewInteractiveRedisCache, repository2.NewCachedInteractiveRepository, service2.NewInteractiveService)

@@ -3,6 +3,10 @@
 package startup
 
 import (
+	repository2 "github.com/WeiXinao/basic-go/webook/interactive/repository"
+	cache2 "github.com/WeiXinao/basic-go/webook/interactive/repository/cache"
+	dao2 "github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
+	service2 "github.com/WeiXinao/basic-go/webook/interactive/service"
 	artEvent "github.com/WeiXinao/basic-go/webook/internal/events/article"
 	"github.com/WeiXinao/basic-go/webook/internal/job"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
@@ -41,10 +45,10 @@ var articleSvcProvider = wire.NewSet(
 	artdao.NewGORMArticleDAO,
 	service.NewArticleService)
 
-var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO,
-	cache.NewInteractiveRedisCache,
-	repository.NewCachedInteractiveRepository,
-	service.NewInteractiveService)
+var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO,
+	cache2.NewInteractiveRedisCache,
+	repository2.NewCachedInteractiveRepository,
+	service2.NewInteractiveService)
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
@@ -106,9 +110,9 @@ func InitArticleHandler(dao artdao.ArticleDAO) *web.ArticleHandler {
 	return &web.ArticleHandler{}
 }
 
-func InitInteractiveService() service.InteractiveService {
+func InitInteractiveService() service2.InteractiveService {
 	wire.Build(thirdProvider, interactiveSvcSet)
-	return service.NewInteractiveService(nil)
+	return service2.NewInteractiveService(nil)
 }
 
 func InitJobScheduler() *job.Scheduler {
