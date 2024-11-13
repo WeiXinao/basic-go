@@ -215,7 +215,7 @@ func (s *Service) needAsync() bool {
 	defer cancel()
 	limited, err := s.limiter.Limit(ctx, s.limiterKey)
 	if err != nil {
-		s.l.Error("短信服务判断是否限流出现问题 ", logger.Error(err))
+		s.l.Error("短信服务判断是否限流出现问题", logger.Error(err))
 		return false
 	}
 	if limited {
@@ -232,7 +232,7 @@ func (s *Service) needAsync() bool {
 	}
 
 	avg := sum / int64(len(s.sendTimes))
-	if s.avgTime != 0 || float64(avg) > s.rate*float64(s.avgTime) {
+	if s.avgTime != 0 && float64(avg) > s.rate*float64(s.avgTime) {
 		return true
 	} else {
 		s.avgTime = avg

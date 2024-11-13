@@ -187,7 +187,7 @@ func TestUserHandler_e2e_SendLoginSMSCode(t *testing.T) {
 
 func TestUserHandler_e2e_LoginJWT(t *testing.T) {
 	server := startup.InitWebServer()
-	db := startup.InitTestDB()
+	db := startup.InitDB()
 	testCases := []struct {
 		name         string
 		before       func(t *testing.T, email string, password string)

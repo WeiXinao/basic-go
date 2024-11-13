@@ -19,7 +19,7 @@ import (
 )
 
 var thirdProvider = wire.NewSet(
-	InitRedis, InitTestDB,
+	InitRedis, InitDB,
 	InitSaramaClient,
 	InitSyncProducer,
 	InitLog)
@@ -104,6 +104,11 @@ func InitArticleHandler(dao artdao.ArticleDAO) *web.ArticleHandler {
 		artEvent.NewSaramaSyncProducer,
 		web.NewArticleHandler)
 	return &web.ArticleHandler{}
+}
+
+func InitInteractiveService() service.InteractiveService {
+	wire.Build(thirdProvider, interactiveSvcSet)
+	return service.NewInteractiveService(nil)
 }
 
 func InitJobScheduler() *job.Scheduler {

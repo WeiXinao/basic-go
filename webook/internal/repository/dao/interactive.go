@@ -14,7 +14,7 @@ type InteractiveDAO interface {
 	InsertCollectionBiz(ctx context.Context, cb UserCollectionBiz) error
 	Get(ctx context.Context, biz string, id int64) (Interactive, error)
 	GetLikeInfo(ctx context.Context, biz string, id int64, uid int64) (UserLikeBiz, error)
-	GetCollectInfo(ctx context.Context, biz string, uid int64, id int64) (UserCollectionBiz, error)
+	GetCollectInfo(ctx context.Context, biz string, id int64, uid int64) (UserCollectionBiz, error)
 	BatchIncrReadCnt(ctx context.Context, bizs []string, ids []int64) error
 	GetByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error)
 }
@@ -25,7 +25,8 @@ type GORMInteractiveDAO struct {
 
 func (dao *GORMInteractiveDAO) GetByIds(ctx context.Context, biz string, ids []int64) ([]Interactive, error) {
 	var res []Interactive
-	err := dao.db.WithContext(ctx).Where("biz = ? AND biz_id IN ?", biz, ids).Error
+	err := dao.db.WithContext(ctx).Where("biz = ? AND biz_id IN ?", biz, ids).
+		Find(&res).Error
 	return res, err
 }
 
@@ -42,7 +43,7 @@ func (dao *GORMInteractiveDAO) BatchIncrReadCnt(ctx context.Context, bizs []stri
 	})
 }
 
-func (dao *GORMInteractiveDAO) GetCollectInfo(ctx context.Context, biz string, uid int64, id int64) (UserCollectionBiz, error) {
+func (dao *GORMInteractiveDAO) GetCollectInfo(ctx context.Context, biz string, id int64, uid int64) (UserCollectionBiz, error) {
 	var res UserCollectionBiz
 	err := dao.db.WithContext(ctx).
 		Where("biz = ? AND biz_id = ? AND uid = ?", biz, id, uid).
@@ -191,6 +192,23 @@ type UserCollectionBiz struct {
 	Ctime int64
 }
 
+// Interactive 正常来说，一张主表和它有关联的表会共用一个 DAO
+// 所以我们就用一个 DAO 来操作
+// 假如说我要查找点赞数量前 100 的,
+// SELECT * FROM
+// (SELECT biz, biz_id, COUNT(*) AS cnt FROM `interactive` GROUP BY  biz, biz_id)
+//
+//	ORDER BY cnt DESC, LIMIT 100;
+//
+// 实时查找，性能贼差，上面这个语句，就是全表扫描，
+// 高性能，我不要求准确性
+// 面试标准答案：用 zset
+// 但是，面试标准答案不够有特色，烂大街了
+// 你可以考虑别的方案
+// 1. 定时计算
+// 1.1 定时计算 + 本地缓存
+// 2. 优化版的 zset，定时筛选 + 实时 zset 计算
+// 还有别的方案你们也可以考虑
 type Interactive struct {
 	Id int64 `gorm:"primaryKey,autoIncrement"`
 	//	<bizid, biz>

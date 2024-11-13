@@ -33,8 +33,8 @@ func (s *ArticleTestSuite) SetupSuite() {
 			Uid: 123,
 		})
 	})
-	s.db = startup.InitTestDB()
-	artHdl := startup.InitArticleHandler(dao.NewAuthorDAO(startup.InitTestDB()))
+	s.db = startup.InitDB()
+	artHdl := startup.InitArticleHandler(dao.NewAuthorDAO(startup.InitDB()))
 	// 注册好了路由
 	artHdl.RegisterRoutes(s.server)
 }

@@ -29,7 +29,7 @@ func InitWebServer() *gin.Engine {
 	loggerV1 := InitLog()
 	handler := jwt.NewRedisJWTHandler(cmdable)
 	v := ioc.InitMiddlewares(cmdable, loggerV1, handler)
-	gormDB := InitTestDB()
+	gormDB := InitDB()
 	userDAO := dao.NewUserDAO(gormDB)
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
@@ -55,7 +55,7 @@ func InitWebServer() *gin.Engine {
 }
 
 func InitArticleHandler(dao2 article.ArticleDAO) *web.ArticleHandler {
-	gormDB := InitTestDB()
+	gormDB := InitDB()
 	userDAO := dao.NewUserDAO(gormDB)
 	cmdable := InitRedis()
 	userCache := cache.NewUserCache(cmdable)
@@ -71,8 +71,18 @@ func InitArticleHandler(dao2 article.ArticleDAO) *web.ArticleHandler {
 	return articleHandler
 }
 
+func InitInteractiveService() service.InteractiveService {
+	gormDB := InitDB()
+	interactiveDAO := dao.NewGORMInteractiveDAO(gormDB)
+	cmdable := InitRedis()
+	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service.NewInteractiveService(interactiveRepository)
+	return interactiveService
+}
+
 func InitJobScheduler() *job.Scheduler {
-	gormDB := InitTestDB()
+	gormDB := InitDB()
 	jobDAO := dao.NewGormJobDAO(gormDB)
 	cronJobRepository := repository.NewPreemptJobRepository(jobDAO)
 	loggerV1 := InitLog()
@@ -82,7 +92,7 @@ func InitJobScheduler() *job.Scheduler {
 }
 
 func InitUserSvc() service.UserService {
-	gormDB := InitTestDB()
+	gormDB := InitDB()
 	userDAO := dao.NewUserDAO(gormDB)
 	cmdable := InitRedis()
 	userCache := cache.NewUserCache(cmdable)
@@ -101,7 +111,7 @@ func InitJwtHdl() jwt.Handler {
 // wire.go:
 
 var thirdProvider = wire.NewSet(
-	InitRedis, InitTestDB,
+	InitRedis, InitDB,
 	InitSaramaClient,
 	InitSyncProducer,
 	InitLog)

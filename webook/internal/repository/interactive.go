@@ -58,7 +58,7 @@ func (c *CacheInteractiveRepository) IncrLike(ctx context.Context, biz string, i
 	if err != nil {
 		return err
 	}
-	return c.cache.IncrLikeCntIfPresent(ctx, biz, uid)
+	return c.cache.IncrLikeCntIfPresent(ctx, biz, id)
 }
 
 func (c *CacheInteractiveRepository) AddCollectionItem(ctx context.Context, biz string, id int64, cid int64, uid int64) error {
@@ -108,12 +108,12 @@ func (c *CacheInteractiveRepository) Liked(ctx context.Context, biz string, id i
 }
 
 func (c *CacheInteractiveRepository) Collected(ctx context.Context, biz string, id int64, uid int64) (bool, error) {
-	_, err := c.dao.GetCollectInfo(ctx, biz, uid, uid)
+	_, err := c.dao.GetCollectInfo(ctx, biz, id, uid)
 	switch err {
 	case nil:
 		return true, nil
 	case dao.ErrRecordNotFound:
-		return false, err
+		return false, nil
 	default:
 		return false, err
 	}
@@ -139,6 +139,7 @@ func (c *CacheInteractiveRepository) IncrReadCnt(ctx context.Context, biz string
 
 func (c *CacheInteractiveRepository) toDomain(ie dao.Interactive) domain.Interactive {
 	return domain.Interactive{
+		BizId:      ie.BizId,
 		ReadCnt:    ie.ReadCnt,
 		LikeCnt:    ie.LikeCnt,
 		CollectCnt: ie.CollectCnt,
