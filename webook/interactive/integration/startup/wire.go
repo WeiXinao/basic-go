@@ -48,15 +48,14 @@ var articleSvcProvider = wire.NewSet(
 var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO,
 	cache2.NewInteractiveRedisCache,
 	repository2.NewCachedInteractiveRepository,
-	service2.NewInteractiveService,
-	ioc.InitIntrClient)
+	service2.NewInteractiveService)
 
 func InitWebServer() *gin.Engine {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
 		articleSvcProvider,
-		interactiveSvcSet,
+		//interactiveSvcSet,
 
 		// cache 部分
 		cache.NewCodeCache,
@@ -102,13 +101,18 @@ func InitArticleHandler(dao artdao.ArticleDAO) *web.ArticleHandler {
 	wire.Build(
 		thirdProvider,
 		userSvcProvider,
-		interactiveSvcSet,
+		//interactiveSvcSet,
 		article.NewCachedArticleRepository,
 		cache.NewArticleRedisCache,
 		service.NewArticleService,
 		artEvent.NewSaramaSyncProducer,
 		web.NewArticleHandler)
 	return &web.ArticleHandler{}
+}
+
+func InitInteractiveService() service2.InteractiveService {
+	wire.Build(thirdProvider, interactiveSvcSet)
+	return service2.NewInteractiveService(nil)
 }
 
 func InitJobScheduler() *job.Scheduler {
