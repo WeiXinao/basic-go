@@ -33,7 +33,7 @@ const (
 type InteractiveServiceClient interface {
 	IncrReadCnt(ctx context.Context, in *IncrReadCntRequest, opts ...grpc.CallOption) (*IncrReadCntResponse, error)
 	Like(ctx context.Context, in *LikeRequest, opts ...grpc.CallOption) (*LikeResponse, error)
-	CancelLike(ctx context.Context, in *CollectRequest, opts ...grpc.CallOption) (*CancelLikeResponse, error)
+	CancelLike(ctx context.Context, in *CancelLikeRequest, opts ...grpc.CallOption) (*CancelLikeResponse, error)
 	Collect(ctx context.Context, in *CollectRequest, opts ...grpc.CallOption) (*CollectResponse, error)
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	GetByIds(ctx context.Context, in *GetByIdsRequest, opts ...grpc.CallOption) (*GetByIdsResponse, error)
@@ -67,7 +67,7 @@ func (c *interactiveServiceClient) Like(ctx context.Context, in *LikeRequest, op
 	return out, nil
 }
 
-func (c *interactiveServiceClient) CancelLike(ctx context.Context, in *CollectRequest, opts ...grpc.CallOption) (*CancelLikeResponse, error) {
+func (c *interactiveServiceClient) CancelLike(ctx context.Context, in *CancelLikeRequest, opts ...grpc.CallOption) (*CancelLikeResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CancelLikeResponse)
 	err := c.cc.Invoke(ctx, InteractiveService_CancelLike_FullMethodName, in, out, cOpts...)
@@ -113,7 +113,7 @@ func (c *interactiveServiceClient) GetByIds(ctx context.Context, in *GetByIdsReq
 type InteractiveServiceServer interface {
 	IncrReadCnt(context.Context, *IncrReadCntRequest) (*IncrReadCntResponse, error)
 	Like(context.Context, *LikeRequest) (*LikeResponse, error)
-	CancelLike(context.Context, *CollectRequest) (*CancelLikeResponse, error)
+	CancelLike(context.Context, *CancelLikeRequest) (*CancelLikeResponse, error)
 	Collect(context.Context, *CollectRequest) (*CollectResponse, error)
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	GetByIds(context.Context, *GetByIdsRequest) (*GetByIdsResponse, error)
@@ -133,7 +133,7 @@ func (UnimplementedInteractiveServiceServer) IncrReadCnt(context.Context, *IncrR
 func (UnimplementedInteractiveServiceServer) Like(context.Context, *LikeRequest) (*LikeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Like not implemented")
 }
-func (UnimplementedInteractiveServiceServer) CancelLike(context.Context, *CollectRequest) (*CancelLikeResponse, error) {
+func (UnimplementedInteractiveServiceServer) CancelLike(context.Context, *CancelLikeRequest) (*CancelLikeResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CancelLike not implemented")
 }
 func (UnimplementedInteractiveServiceServer) Collect(context.Context, *CollectRequest) (*CollectResponse, error) {
@@ -203,7 +203,7 @@ func _InteractiveService_Like_Handler(srv interface{}, ctx context.Context, dec 
 }
 
 func _InteractiveService_CancelLike_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CollectRequest)
+	in := new(CancelLikeRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
@@ -215,7 +215,7 @@ func _InteractiveService_CancelLike_Handler(srv interface{}, ctx context.Context
 		FullMethod: InteractiveService_CancelLike_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(InteractiveServiceServer).CancelLike(ctx, req.(*CollectRequest))
+		return srv.(InteractiveServiceServer).CancelLike(ctx, req.(*CancelLikeRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }

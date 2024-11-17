@@ -2,6 +2,7 @@ package article
 
 import (
 	"context"
+	dao2 "github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/cache"
@@ -13,6 +14,8 @@ import (
 )
 
 // repository 还是要用来操作缓存和 DAO
+var ErrInteractiveNotFound = dao2.ErrRecordNotFound
+
 // 事务概念还是应该在 DAO 这一层
 
 type ArticleRepository interface {
@@ -57,7 +60,7 @@ func (c *CachedArticleRepository) ListPub(ctx context.Context, start time.Time, 
 
 func (c *CachedArticleRepository) GetPubById(ctx *gin.Context, id int64) (domain.Article, error) {
 	res, err := c.cache.GetPub(ctx, id)
-	if err != nil {
+	if err == nil {
 		return res, nil
 	}
 	art, err := c.dao.GetPubById(ctx, id)

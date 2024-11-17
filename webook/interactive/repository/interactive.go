@@ -2,9 +2,9 @@ package repository
 
 import (
 	"context"
-	"github.com/WeiXinao/basic-go/webook/internal/domain"
-	"github.com/WeiXinao/basic-go/webook/internal/repository/cache"
-	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
+	"github.com/WeiXinao/basic-go/webook/interactive/domain"
+	"github.com/WeiXinao/basic-go/webook/interactive/repository/cache"
+	"github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
 	"github.com/WeiXinao/basic-go/webook/pkg/logger"
 	"github.com/WeiXinao/xkit/slice"
 )

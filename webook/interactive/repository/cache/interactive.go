@@ -4,7 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"github.com/WeiXinao/basic-go/webook/internal/domain"
+	"github.com/WeiXinao/basic-go/webook/interactive/domain"
 	"github.com/redis/go-redis/v9"
 	"strconv"
 	"time"

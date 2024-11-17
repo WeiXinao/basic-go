@@ -1,9 +1,9 @@
 package integration
 
 import (
-	"github.com/WeiXinao/basic-go/webook/internal/domain"
+	"github.com/WeiXinao/basic-go/webook/interactive/domain"
+	"github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
 	"github.com/WeiXinao/basic-go/webook/internal/integration/startup"
-	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
 	"github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"

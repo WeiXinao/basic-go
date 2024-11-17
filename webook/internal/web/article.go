@@ -1,6 +1,8 @@
 package web
 
 import (
+	"errors"
+	intrv1 "github.com/WeiXinao/basic-go/webook/api/proto/gen/intr/v1"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/service"
 	ijwt "github.com/WeiXinao/basic-go/webook/internal/web/jwt"
@@ -17,15 +19,19 @@ var _ handler = (*ArticleHandler)(nil)
 
 type ArticleHandler struct {
 	svc      service.ArticleService
-	interSvc service.InteractiveService
+	interSvc intrv1.InteractiveServiceClient
 	l        logger.LoggerV1
 	biz      string
 }
 
-func NewArticleHandler(svc service.ArticleService, l logger.LoggerV1) *ArticleHandler {
+func NewArticleHandler(svc service.ArticleService,
+	intrSvc intrv1.InteractiveServiceClient,
+	l logger.LoggerV1) *ArticleHandler {
 	return &ArticleHandler{
-		svc: svc,
-		l:   l,
+		svc:      svc,
+		l:        l,
+		biz:      "article",
+		interSvc: intrSvc,
 	}
 }
 
@@ -226,7 +232,7 @@ func (a *ArticleHandler) Detail(ctx *gin.Context) {
 		return
 	}
 
-	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	uc := ctx.MustGet("claims").(*ijwt.UserClaims)
 	if art.Author.Id != uc.Uid {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,
@@ -272,13 +278,24 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 	var (
 		eg   errgroup.Group
 		art  domain.Article
-		intr domain.Interactive
+		intr *intrv1.GetResponse
 	)
 
-	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	uc := ctx.MustGet("claims").(*ijwt.UserClaims)
 	eg.Go(func() error {
 		var er error
-		intr, er = a.interSvc.Get(ctx, a.biz, id, uc.Uid)
+		intr, er = a.interSvc.Get(ctx, &intrv1.GetRequest{
+			Biz: a.biz, BizId: id, Uid: uc.Uid,
+		})
+		if errors.Is(er, service.ErrInteractiveNotFound) {
+			intr = &intrv1.GetResponse{
+				Intr: &intrv1.Interactive{
+					Biz:   a.biz,
+					BizId: id,
+				},
+			}
+			return nil
+		}
 		return er
 	})
 
@@ -323,11 +340,11 @@ func (a *ArticleHandler) PubDetail(ctx *gin.Context) {
 			Content:    art.Content,
 			AuthorId:   art.Author.Id,
 			AuthorName: art.Author.Name,
-			ReadCnt:    intr.ReadCnt,
-			CollectCnt: intr.CollectCnt,
-			LikeCnt:    intr.LikeCnt,
-			Liked:      intr.Liked,
-			Collected:  intr.Collected,
+			ReadCnt:    intr.Intr.ReadCnt,
+			CollectCnt: intr.Intr.CollectCnt,
+			LikeCnt:    intr.Intr.LikeCnt,
+			Liked:      intr.Intr.Liked,
+			Collected:  intr.Intr.Collected,
 
 			Status: art.Status.ToUint8(),
 			Ctime:  art.Ctime.Format(time.DateTime),
@@ -346,14 +363,18 @@ func (a *ArticleHandler) Like(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	uc := ctx.MustGet("claims").(*ijwt.UserClaims)
 	var err error
 	if req.Like {
 		// 点赞
-		err = a.interSvc.Like(ctx, a.biz, req.Id, uc.Uid)
+		_, err = a.interSvc.Like(ctx, &intrv1.LikeRequest{
+			Biz: a.biz, BizId: req.Id, Uid: uc.Uid,
+		})
 	} else {
 		// 取消点赞
-		err = a.interSvc.CancelLike(ctx, a.biz, req.Id, uc.Uid)
+		_, err = a.interSvc.CancelLike(ctx, &intrv1.CancelLikeRequest{
+			Biz: a.biz, BizId: req.Id, Uid: uc.Uid,
+		})
 	}
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
@@ -380,9 +401,11 @@ func (a *ArticleHandler) Collect(ctx *gin.Context) {
 	if err := ctx.Bind(&req); err != nil {
 		return
 	}
-	uc := ctx.MustGet("user").(ijwt.UserClaims)
+	uc := ctx.MustGet("claims").(*ijwt.UserClaims)
 
-	err := a.interSvc.Collect(ctx, a.biz, req.Id, req.Cid, uc.Uid)
+	_, err := a.interSvc.Collect(ctx, &intrv1.CollectRequest{
+		Biz: a.biz, BizId: req.Id, Cid: req.Cid, Uid: uc.Uid,
+	})
 	if err != nil {
 		ctx.JSON(http.StatusOK, Result{
 			Code: 5,

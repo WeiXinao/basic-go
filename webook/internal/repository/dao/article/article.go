@@ -35,7 +35,7 @@ func (dao *GORMArticleDAO) ListPub(ctx context.Context, start time.Time, offset 
 	var res []PublishArticle
 	const ArticleStatusPublished = 2
 	err := dao.db.WithContext(ctx).Where("utime < 2 AND status = ?",
-		start.UnixMilli(), ArticleStatusPublished).Offset(offset).Limit(limit).First(&res).Error
+		start.UnixMilli(), ArticleStatusPublished).Offset(offset).Limit(limit).Find(&res).Error
 	return res, err
 }
 

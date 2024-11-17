@@ -10,3 +10,7 @@ memcached:
 kafka:
   addr:
     - "192.168.5.3:9094"
+
+grpc:
+  server:
+    addr: ":8090"

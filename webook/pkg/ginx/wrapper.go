@@ -24,7 +24,7 @@ func InitCounter(opt prometheus.CounterOpts) {
 
 func WrapClaims[C jwt.Claims](fn func(ctx *gin.Context, uc C) (Result, error)) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		val, ok := ctx.Get("user")
+		val, ok := ctx.Get("claims")
 		if !ok {
 			ctx.AbortWithStatus(http.StatusUnauthorized)
 		}

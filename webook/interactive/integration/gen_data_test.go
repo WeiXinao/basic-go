@@ -2,8 +2,8 @@ package integration
 
 import (
 	_ "embed"
-	"gitee.com/geekbang/basic-go/webook/interactive/repository/dao"
-	"gitee.com/geekbang/basic-go/webook/internal/integration/startup"
+	"github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
+	"github.com/WeiXinao/basic-go/webook/internal/integration/startup"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
 	"math/rand"

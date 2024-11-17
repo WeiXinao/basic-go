@@ -3,8 +3,16 @@ db:
 
 redis:
   addr: "192.168.5.4:6379"
+
 memcached:
   addr: "192.168.5.4:11211"
+
 kafka:
   addr:
     - "192.168.5.3:9094"
+
+grpc:
+  client:
+    intr:
+      addr: "localhost:8090"
+      threshold: 100
