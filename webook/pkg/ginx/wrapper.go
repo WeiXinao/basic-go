@@ -13,7 +13,7 @@ import (
 // 技术含量不是很高，但是绝对有技巧
 
 // L 使用包变量
-var L logger.LoggerV1
+var L logger.LoggerV1 = logger.NewNopLogger()
 
 var vector *prometheus.CounterVec
 
@@ -122,6 +122,22 @@ func WrapBody[T any](l logger.LoggerV1, fn func(ctx *gin.Context, req T) (Result
 		if err != nil {
 			//	开始处理 error，其实就是记录一下日志
 			l.Error("处理业务逻辑出错",
+				logger.String("path", ctx.Request.URL.Path),
+				// 命中的路由
+				logger.String("route", ctx.FullPath()),
+				logger.Error(err))
+		}
+		ctx.JSON(http.StatusOK, res)
+	}
+}
+
+func Wrap(fn func(ctx *gin.Context) (Result, error)) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		res, err := fn(ctx)
+		//vector.WithLabelValues(strconv.Itoa(res.Code)).Inc()
+		if err != nil {
+			//	开始处理 error，其实就是记录一下日志
+			L.Error("处理业务逻辑出错",
 				logger.String("path", ctx.Request.URL.Path),
 				// 命中的路由
 				logger.String("route", ctx.FullPath()),

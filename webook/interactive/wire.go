@@ -13,10 +13,14 @@ import (
 	"github.com/google/wire"
 )
 
-var thirdPartySet = wire.NewSet(
+var thirdPartySet = wire.NewSet(ioc.InitSrcDB,
+	ioc.InitDstDB,
+	ioc.InitDoubleWritePool,
+	ioc.InitBizDB,
+	ioc.InitLogger,
 	ioc.InitSaramaClient,
-	ioc.InitRedis, ioc.InitDB,
-	ioc.InitLogger)
+	ioc.InitSaramaSyncProducer,
+	ioc.InitRedis)
 
 var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO,
 	cache2.NewInteractiveRedisCache,
@@ -28,8 +32,11 @@ func InitApp() *App {
 		interactiveSvcSet,
 		grpc.NewInteractiveServiceServer,
 		events.NewInteractiveReadEventConsumer,
+		ioc.InitInteractiveProducer,
+		ioc.InitFixerConsumer,
 		ioc.InitConsumers,
 		ioc.NewGrpcxServer,
+		ioc.InitGinxServer,
 		wire.Struct(new(App), "*"),
 	)
 	return new(App)

@@ -45,7 +45,8 @@ create table if not exists webook_intr.user_like_bizs
         unique (biz_id, biz, uid)
 );
 
-INSERT INTO `interactives`(`biz_id`, `biz`, `read_cnt`, `collect_cnt`, `like_cnt`, `ctime`, `utime`)
+
+INSERT INTO `interactives` (`biz_id`, `biz`, `read_cnt`, `collect_cnt`, `like_cnt`, `ctime`, `utime`)
 VALUES(1,"test",6613,7082,1303,1731823780420,1731823780420),
 (2,"test",9744,5281,4516,1731823780420,1731823780420),
 (3,"test",4949,9085,1457,1731823780420,1731823780420),

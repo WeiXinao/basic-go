@@ -3,6 +3,10 @@ package logger
 type NopLogger struct {
 }
 
+func NewNopLogger() *NopLogger {
+	return &NopLogger{}
+}
+
 func (n *NopLogger) With(args ...Field) LoggerV1 {
 	panic("implement me")
 }

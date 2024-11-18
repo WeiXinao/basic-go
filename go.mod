@@ -7,7 +7,7 @@ toolchain go1.22.0
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/IBM/sarama v1.43.3
-	github.com/WeiXinao/xkit v0.0.0-20241018025123-37479330e167
+	github.com/WeiXinao/xkit v0.0.0-20241112141343-6bda9e2f43e5
 	github.com/alibabacloud-go/darabonba-openapi v0.2.1
 	github.com/alibabacloud-go/dysmsapi-20170525/v2 v2.0.18
 	github.com/aliyun/alibaba-cloud-sdk-go v1.63.11
