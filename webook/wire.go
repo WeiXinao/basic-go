@@ -3,7 +3,6 @@
 package main
 
 import (
-	events "github.com/WeiXinao/basic-go/webook/interactive/events"
 	repository2 "github.com/WeiXinao/basic-go/webook/interactive/repository"
 	cache2 "github.com/WeiXinao/basic-go/webook/interactive/repository/cache"
 	dao2 "github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
@@ -37,6 +36,7 @@ func InitWebServer() *App {
 		// 最基础的第三方依赖
 		ioc.InitDB, ioc.InitRedis,
 		ioc.InitLogger,
+		ioc.InitEtcd,
 		ioc.InitSaramaClient,
 		ioc.InitSyncProducer,
 		ioc.InitRlockClient,
@@ -45,14 +45,14 @@ func InitWebServer() *App {
 		dao.NewUserDAO,
 		artDao.NewGORMArticleDAO,
 
-		interactiveSvcSet,
-		ioc.InitIntrClient,
+		//interactiveSvcSet,
+		ioc.InitIntrClientV1,
 		rankingSvcSet,
 		ioc.InitJobs,
 		ioc.InitRankingJob,
 
 		article.NewSaramaSyncProducer,
-		events.NewInteractiveReadEventConsumer,
+		//events.NewInteractiveReadEventConsumer,
 		ioc.InitConsumers,
 
 		//	cache 部分
@@ -64,6 +64,7 @@ func InitWebServer() *App {
 		// repository 部分
 		repository.NewUserRepository,
 		repository.NewCodeRepository,
+		repository.NewCachedRankingRepository,
 		artRepo.NewCachedArticleRepository,
 
 		// Service 部分

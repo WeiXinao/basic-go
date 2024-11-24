@@ -4,8 +4,8 @@ import (
 	"context"
 	intrv1 "github.com/WeiXinao/basic-go/webook/api/proto/gen/intr/v1"
 	"github.com/WeiXinao/xkit/syncx/atomicx"
+	"golang.org/x/exp/rand"
 	"google.golang.org/grpc"
-	"math/rand"
 )
 
 type InteractiveClient struct {
@@ -17,9 +17,9 @@ type InteractiveClient struct {
 
 func NewInteractiveClient(remote intrv1.InteractiveServiceClient, local intrv1.InteractiveServiceClient) *InteractiveClient {
 	return &InteractiveClient{
-		remote:    remote,
-		local:     local,
-		threshold: atomicx.NewValue[int32](),
+		remote: remote,
+		//local:     local,
+		//threshold: atomicx.NewValue[int32](),
 	}
 }
 

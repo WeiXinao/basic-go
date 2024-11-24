@@ -21,21 +21,34 @@ func (s *GoZeroTestSuite) TestGoZeroClient() {
 			Hosts: []string{"192.168.5.3:2379"},
 			Key:   "user",
 		},
-	})
+	},
+		zrpc.WithDialOption(
+			grpc.WithDefaultServiceConfig(`{"loadBalancingConfig": [{"round_robin":{}}]}`),
+		))
 	client := NewUserServiceClient(zClient.Conn())
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	resp, err := client.GetById(ctx, &GetByIdRequest{
-		Id: 123,
-	})
-	require.NoError(s.T(), err)
-	s.T().Log(resp.User)
+	for _ = range 10 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		resp, err := client.GetById(ctx, &GetByIdRequest{
+			Id: 123,
+		})
+		cancel()
+		require.NoError(s.T(), err)
+		s.T().Log(resp.User)
+	}
+}
+
+// TestGoZeroServer 启动 grpc 服务器
+func (s *GoZeroTestSuite) TestGoZeroServer() {
+	go func() {
+		s.startServer(":8090")
+	}()
+	s.startServer(":8091")
 }
 
 // TestGoZeroServer 启动 grpc 服务端
-func (s *GoZeroTestSuite) TestGoZeroServer() {
+func (s *GoZeroTestSuite) startServer(addr string) {
 	c := zrpc.RpcServerConf{
-		ListenOn: ":8090",
+		ListenOn: addr,
 		Etcd: discov.EtcdConf{
 			Hosts: []string{"192.168.5.3:2379"},
 			Key:   "user",
@@ -44,7 +57,9 @@ func (s *GoZeroTestSuite) TestGoZeroServer() {
 
 	//	创建的一个服务器，并且注册服务实例
 	server := zrpc.MustNewServer(c, func(server *grpc.Server) {
-		RegisterUserServiceServer(server, &Server{})
+		RegisterUserServiceServer(server, &Server{
+			Name: addr,
+		})
 	})
 
 	//	这个是往 gRPC 里面添加拦截器（也可以叫做插件）

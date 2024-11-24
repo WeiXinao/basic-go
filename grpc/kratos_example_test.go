@@ -5,6 +5,8 @@ import (
 	etcd "github.com/go-kratos/kratos/contrib/registry/etcd/v2"
 	"github.com/go-kratos/kratos/v2"
 	"github.com/go-kratos/kratos/v2/middleware/recovery"
+	"github.com/go-kratos/kratos/v2/selector"
+	"github.com/go-kratos/kratos/v2/selector/random"
 	"github.com/go-kratos/kratos/v2/transport/grpc"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -27,6 +29,7 @@ func (s *KratosTestSuite) SetupSuite() {
 }
 
 func (s *KratosTestSuite) TestClient() {
+	// 默认是 WRR 负载均衡算法
 	r := etcd.New(s.etcdClient)
 	cc, err := grpc.DialInsecure(context.Background(),
 		grpc.WithEndpoint("discovery:///user"),
@@ -36,21 +39,54 @@ func (s *KratosTestSuite) TestClient() {
 	defer cc.Close()
 
 	client := NewUserServiceClient(cc)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-	defer cancel()
-	resp, err := client.GetById(ctx, &GetByIdRequest{
-		Id: 123,
-	})
+	for _ = range 10 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		resp, err := client.GetById(ctx, &GetByIdRequest{
+			Id: 123,
+		})
+		cancel()
+		require.NoError(s.T(), err)
+		s.T().Log(resp.User)
+	}
+}
+
+func (s *KratosTestSuite) TestClientLoadBalancer() {
+	selector.SetGlobalSelector(random.NewBuilder())
+	r := etcd.New(s.etcdClient)
+	cc, err := grpc.DialInsecure(context.Background(),
+		grpc.WithEndpoint("discovery:///user"),
+		grpc.WithDiscovery(r),
+	)
 	require.NoError(s.T(), err)
-	s.T().Log(resp.User)
+	defer cc.Close()
+
+	client := NewUserServiceClient(cc)
+	for _ = range 10 {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		resp, err := client.GetById(ctx, &GetByIdRequest{
+			Id: 123,
+		})
+		cancel()
+		require.NoError(s.T(), err)
+		s.T().Log(resp.User)
+	}
 }
 
 func (s *KratosTestSuite) TestServer() {
+	go func() {
+		s.startServer(":8090")
+	}()
+	s.startServer(":8091")
+}
+
+func (s *KratosTestSuite) startServer(addr string) {
 	grpcSrv := grpc.NewServer(
-		grpc.Address(":8090"),
+		grpc.Address(addr),
 		grpc.Middleware(recovery.Recovery()),
 	)
-	RegisterUserServiceServer(grpcSrv, &Server{})
+	RegisterUserServiceServer(grpcSrv, &Server{
+		Name: addr,
+	})
 	//	注册中心
 	r := etcd.New(s.etcdClient)
 	app := kratos.New(
