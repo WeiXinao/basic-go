@@ -15,7 +15,7 @@ func TestClient(t *testing.T) {
 	cc, err := grpc.Dial(":8090", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	require.NoError(t, err)
 	client := NewUserServiceClient(cc)
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()
 	resp, err := client.GetById(ctx, &GetByIdRequest{
 		Id: 456,

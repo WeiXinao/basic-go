@@ -59,7 +59,7 @@ services:
   prometheus:
     image: "prom/prometheus:v2.47.2"
     volumes:
-      - ~/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - ~/prometheus/webook-prometheus.yaml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
   zipkin:

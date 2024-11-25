@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"github.com/WeiXinao/basic-go/webook/internal/domain"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/cache"
 	"github.com/WeiXinao/basic-go/webook/internal/repository/dao"
@@ -87,6 +88,12 @@ func (r *CachedUserRepository) FindById(ctx context.Context, id int64) (domain.U
 		// 必然是有数据
 		return u, nil
 	}
+
+	// 检测限流/熔断/降级标记位
+	if ctx.Value("downgrade") == "true" {
+		return u, errors.New("触发降级，不再查询数据库")
+	}
+
 	// 没这个数据
 	//if err == cache.ErrKeyNotExist {
 	// 去数据库里面加载
