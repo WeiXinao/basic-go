@@ -1,0 +1,11 @@
+db:
+  dsn: "root:123456@tcp(192.168.5.4:3307)/webook_account"
+
+grpc:
+  server:
+    port: 8100
+    etcdTTL: 60
+
+etcd:
+  endpoints:
+    - "192.168.5.4:2379"

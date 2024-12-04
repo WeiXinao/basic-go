@@ -2,7 +2,7 @@ package ioc
 
 import (
 	"fmt"
-	"github.com/WeiXinao/basic-go/webook/comment/repository/dao"
+	"github.com/WeiXinao/basic-go/webook/account/repository/dao"
 	"github.com/spf13/viper"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
