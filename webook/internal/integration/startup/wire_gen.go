@@ -7,10 +7,6 @@
 package startup
 
 import (
-	repository2 "github.com/WeiXinao/basic-go/webook/interactive/repository"
-	cache2 "github.com/WeiXinao/basic-go/webook/interactive/repository/cache"
-	dao2 "github.com/WeiXinao/basic-go/webook/interactive/repository/dao"
-	service2 "github.com/WeiXinao/basic-go/webook/interactive/service"
 	article3 "github.com/WeiXinao/basic-go/webook/internal/events/article"
 	"github.com/WeiXinao/basic-go/webook/internal/job"
 	"github.com/WeiXinao/basic-go/webook/internal/repository"
@@ -33,8 +29,8 @@ func InitWebServer() *gin.Engine {
 	loggerV1 := InitLog()
 	handler := jwt.NewRedisJWTHandler(cmdable)
 	v := ioc.InitMiddlewares(cmdable, loggerV1, handler)
-	db := InitDB()
-	userDAO := dao.NewUserDAO(db)
+	gormDB := InitDB()
+	userDAO := dao.NewUserDAO(gormDB)
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
 	userService := service.NewUserService(userRepository, loggerV1)
@@ -46,48 +42,48 @@ func InitWebServer() *gin.Engine {
 	wechatService := InitPhantomWechatService(loggerV1)
 	wechatHandlerConfig := InitWechatHandlerConfig()
 	oAuth2WechatHandler := web.NewOAuth2WechatHandler(wechatService, userService, handler, wechatHandlerConfig)
-	articleDAO := article.NewGORMArticleDAO(db)
+	articleDAO := article.NewGORMArticleDAO(gormDB)
 	articleCache := cache.NewArticleRedisCache(cmdable)
 	articleRepository := article2.NewCachedArticleRepository(articleDAO, userRepository, articleCache)
 	client := InitSaramaClient()
 	syncProducer := InitSyncProducer(client)
 	producer := article3.NewSaramaSyncProducer(syncProducer)
 	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
-	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
-	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
-	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
-	interactiveService := service2.NewInteractiveService(interactiveRepository)
-	interactiveServiceClient := ioc.InitIntrClient(interactiveService)
-	articleHandler := web.NewArticleHandler(articleService, interactiveServiceClient, loggerV1)
+	articleHandler := web.NewArticleHandler(articleService, loggerV1)
 	engine := ioc.InitWebServer(v, userHandler, oAuth2WechatHandler, articleHandler)
 	return engine
 }
 
-func InitArticleHandler(dao3 article.ArticleDAO) *web.ArticleHandler {
-	db := InitDB()
-	userDAO := dao.NewUserDAO(db)
+func InitArticleHandler(dao2 article.ArticleDAO) *web.ArticleHandler {
+	gormDB := InitDB()
+	userDAO := dao.NewUserDAO(gormDB)
 	cmdable := InitRedis()
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
 	articleCache := cache.NewArticleRedisCache(cmdable)
-	articleRepository := article2.NewCachedArticleRepository(dao3, userRepository, articleCache)
+	articleRepository := article2.NewCachedArticleRepository(dao2, userRepository, articleCache)
 	client := InitSaramaClient()
 	syncProducer := InitSyncProducer(client)
 	producer := article3.NewSaramaSyncProducer(syncProducer)
 	loggerV1 := InitLog()
 	articleService := service.NewArticleService(articleRepository, producer, loggerV1)
-	interactiveDAO := dao2.NewGORMInteractiveDAO(db)
-	interactiveCache := cache2.NewInteractiveRedisCache(cmdable)
-	interactiveRepository := repository2.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
-	interactiveService := service2.NewInteractiveService(interactiveRepository)
-	interactiveServiceClient := ioc.InitIntrClient(interactiveService)
-	articleHandler := web.NewArticleHandler(articleService, interactiveServiceClient, loggerV1)
+	articleHandler := web.NewArticleHandler(articleService, loggerV1)
 	return articleHandler
 }
 
+func InitInteractiveService() service.InteractiveService {
+	gormDB := InitDB()
+	interactiveDAO := dao.NewGORMInteractiveDAO(gormDB)
+	cmdable := InitRedis()
+	interactiveCache := cache.NewInteractiveRedisCache(cmdable)
+	interactiveRepository := repository.NewCachedInteractiveRepository(interactiveDAO, interactiveCache)
+	interactiveService := service.NewInteractiveService(interactiveRepository)
+	return interactiveService
+}
+
 func InitJobScheduler() *job.Scheduler {
-	db := InitDB()
-	jobDAO := dao.NewGormJobDAO(db)
+	gormDB := InitDB()
+	jobDAO := dao.NewGormJobDAO(gormDB)
 	cronJobRepository := repository.NewPreemptJobRepository(jobDAO)
 	loggerV1 := InitLog()
 	cronJobService := service.NewCronJobService(cronJobRepository, loggerV1)
@@ -96,8 +92,8 @@ func InitJobScheduler() *job.Scheduler {
 }
 
 func InitUserSvc() service.UserService {
-	db := InitDB()
-	userDAO := dao.NewUserDAO(db)
+	gormDB := InitDB()
+	userDAO := dao.NewUserDAO(gormDB)
 	cmdable := InitRedis()
 	userCache := cache.NewUserCache(cmdable)
 	userRepository := repository.NewUserRepository(userDAO, userCache)
@@ -126,4 +122,4 @@ var userSvcProvider = wire.NewSet(dao.NewUserDAO, cache.NewUserCache, repository
 
 var articleSvcProvider = wire.NewSet(article2.NewCachedArticleRepository, cache.NewArticleRedisCache, article.NewGORMArticleDAO, service.NewArticleService)
 
-var interactiveSvcSet = wire.NewSet(dao2.NewGORMInteractiveDAO, cache2.NewInteractiveRedisCache, repository2.NewCachedInteractiveRepository, service2.NewInteractiveService, ioc.InitIntrClient)
+var interactiveSvcSet = wire.NewSet(dao.NewGORMInteractiveDAO, cache.NewInteractiveRedisCache, repository.NewCachedInteractiveRepository, service.NewInteractiveService)
